@@ -1,5 +1,6 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import type { Project } from "@prisma/client";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 
@@ -23,7 +24,7 @@ export async function projectRoutes(app: FastifyInstance) {
       orderBy: { updatedAt: "desc" },
       include: { _count: { select: { plans: true } } },
     });
-    return projects.map((p) => ({
+    return projects.map((p: Project & { _count: { plans: number } }) => ({
       id: p.id,
       name: p.name,
       createdAt: p.createdAt.toISOString(),

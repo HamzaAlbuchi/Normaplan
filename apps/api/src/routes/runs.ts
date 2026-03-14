@@ -3,7 +3,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { nanoid } from "nanoid";
 import { runRules } from "@baupilot/rule-engine";
-import type { PlanElements } from "@baupilot/types";
+import type { PlanElements, RuleViolation } from "@baupilot/types";
 
 export async function runRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
@@ -34,8 +34,8 @@ export async function runRoutes(app: FastifyInstance) {
     const runId = nanoid();
     const { violations, ruleVersion } = runRules(elements, { runId, planId: plan.id });
 
-    const warningCount = violations.filter((v) => v.severity === "warning").length;
-    const errorCount = violations.filter((v) => v.severity === "error").length;
+    const warningCount = violations.filter((v: RuleViolation) => v.severity === "warning").length;
+    const errorCount = violations.filter((v: RuleViolation) => v.severity === "error").length;
 
     const run = await prisma.ruleRun.create({
       data: {
@@ -49,7 +49,7 @@ export async function runRoutes(app: FastifyInstance) {
     });
 
     await prisma.ruleViolation.createMany({
-      data: violations.map((v) => ({
+      data: violations.map((v: RuleViolation) => ({
         runId: run.id,
         ruleId: v.ruleId,
         ruleName: v.ruleName,
@@ -75,7 +75,7 @@ export async function runRoutes(app: FastifyInstance) {
       violationCount: withViolations!.violationCount,
       warningCount: withViolations!.warningCount,
       errorCount: withViolations!.errorCount,
-      violations: withViolations!.violations.map((v) => ({
+      violations: withViolations!.violations.map((v: { ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null }) => ({
         ruleId: v.ruleId,
         ruleName: v.ruleName,
         severity: v.severity,
@@ -106,7 +106,7 @@ export async function runRoutes(app: FastifyInstance) {
       violationCount: run.violationCount,
       warningCount: run.warningCount,
       errorCount: run.errorCount,
-      violations: run.violations.map((v) => ({
+      violations: run.violations.map((v: { ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null }) => ({
         ruleId: v.ruleId,
         ruleName: v.ruleName,
         severity: v.severity,
