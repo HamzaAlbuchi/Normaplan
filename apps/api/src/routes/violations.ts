@@ -35,9 +35,9 @@ export async function violationRoutes(app: FastifyInstance) {
       return reply.status(404).send({ code: "NOT_FOUND", message: "Violation not found" });
 
     const { action, reason, comment } = body.data;
-    if (action === "dismiss" && !DISMISS_REASON_VALUES.includes(reason))
+    if (action === "dismiss" && !(DISMISS_REASON_VALUES as readonly string[]).includes(reason))
       return reply.status(400).send({ code: "INVALID_REASON", message: "Invalid dismiss reason" });
-    if (action === "defer" && !DEFER_REASON_VALUES.includes(reason))
+    if (action === "defer" && !(DEFER_REASON_VALUES as readonly string[]).includes(reason))
       return reply.status(400).send({ code: "INVALID_REASON", message: "Invalid defer reason" });
 
     const toStatus = action === "dismiss" ? "dismissed" : "deferred";
