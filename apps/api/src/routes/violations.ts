@@ -2,14 +2,76 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, isAdmin } from "../auth.js";
-import { canReviewViolations, canAccessProject } from "../rbac.js";
+import { canReviewViolations, canAccessProject, listAccessibleProjectIds } from "../rbac.js";
 import { DISMISS_REASON_VALUES, DEFER_REASON_VALUES } from "../constants/reviewReasons.js";
 
+const listQuery = z.object({
+  status: z.string().optional(),
+  severity: z.enum(["info", "warning", "error"]).optional(),
+  projectId: z.string().cuid().optional(),
+  ruleId: z.string().optional(),
+  reviewedBy: z.string().cuid().optional(),
+  sort: z.enum(["detectedAt", "updatedAt"]).optional().default("detectedAt"),
+  order: z.enum(["asc", "desc"]).optional().default("desc"),
+  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  offset: z.coerce.number().min(0).optional().default(0),
+});
+
 const updateBody = z.object({
-  action: z.enum(["dismiss", "defer"]),
-  reason: z.string().min(1),
+  action: z.enum(["confirm", "dismiss", "defer", "resolve"]),
+  reason: z.string().min(1).optional(),
   comment: z.string().max(2000).optional(),
 });
+
+function mapSeverity(s: string): string {
+  return s === "error" ? "critical" : s;
+}
+
+function toViolationDto(v: {
+  id: string;
+  ruleId: string;
+  ruleName: string;
+  severity: string;
+  message: string;
+  suggestion: string | null;
+  elementIds: string[];
+  actualValue: number | null;
+  requiredValue: number | null;
+  regulationRef: string | null;
+  status: string;
+  reason: string | null;
+  comment: string | null;
+  decidedAt: Date | null;
+  updatedAt: Date;
+  run: { id: string; checkedAt: Date; plan: { id: string; name: string; projectId: string; project: { id: string; name: string } } };
+  decidedBy: { id: string; email: string; name: string | null } | null;
+}) {
+  return {
+    id: v.id,
+    title: v.ruleName,
+    description: v.message,
+    severity: mapSeverity(v.severity),
+    status: v.status,
+    projectId: v.run.plan.project.id,
+    projectName: v.run.plan.project.name,
+    planId: v.run.plan.id,
+    planName: v.run.plan.name,
+    runId: v.run.id,
+    elementIds: v.elementIds,
+    ruleId: v.ruleId,
+    ruleName: v.ruleName,
+    actualValue: v.actualValue,
+    requiredValue: v.requiredValue,
+    regulationRef: v.regulationRef,
+    suggestion: v.suggestion,
+    detectedAt: v.run.checkedAt.toISOString(),
+    updatedAt: v.updatedAt.toISOString(),
+    reviewedBy: v.decidedBy ? { id: v.decidedBy.id, email: v.decidedBy.email, name: v.decidedBy.name } : undefined,
+    reviewedAt: v.decidedAt?.toISOString(),
+    reason: v.reason,
+    comment: v.comment,
+  };
+}
 
 export async function violationRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
@@ -22,6 +84,66 @@ export async function violationRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get("/", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const query = listQuery.safeParse(req.query);
+    if (!query.success) return reply.status(400).send({ code: "VALIDATION_ERROR", message: query.error.message });
+
+    const projectIds = await listAccessibleProjectIds(user.id);
+    if (projectIds.length === 0) return { items: [], total: 0 };
+
+    const runWhere: { plan: { projectId: unknown } } = {
+      plan: { projectId: query.data.projectId ? query.data.projectId : { in: projectIds } },
+    };
+    if (query.data.projectId && !projectIds.includes(query.data.projectId)) {
+      return { items: [], total: 0 };
+    }
+
+    const where: Record<string, unknown> = { run: runWhere };
+    if (query.data.status) where.status = query.data.status;
+    if (query.data.severity) where.severity = query.data.severity;
+    if (query.data.ruleId) where.ruleId = query.data.ruleId;
+    if (query.data.reviewedBy) where.decidedByUserId = query.data.reviewedBy;
+
+    const [items, total] = await Promise.all([
+      prisma.ruleViolation.findMany({
+        where,
+        orderBy: query.data.sort === "updatedAt"
+          ? { updatedAt: query.data.order }
+          : { run: { checkedAt: query.data.order } },
+        take: query.data.limit,
+        skip: query.data.offset,
+        include: {
+          run: { include: { plan: { include: { project: true } } } },
+          decidedBy: { select: { id: true, email: true, name: true } },
+        },
+      }),
+      prisma.ruleViolation.count({ where }),
+    ]);
+
+    return { items: items.map(toViolationDto), total };
+  });
+
+  app.get("/:violationId", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { violationId } = req.params as { violationId: string };
+
+    const violation = await prisma.ruleViolation.findFirst({
+      where: { id: violationId },
+      include: {
+        run: { include: { plan: { include: { project: true } } } },
+        decidedBy: { select: { id: true, email: true, name: true } },
+      },
+    });
+    if (!violation) return reply.status(404).send({ code: "NOT_FOUND", message: "Violation not found" });
+
+    const access = await canAccessProject(user.id, violation.run.plan.projectId);
+    if (!access.ok && !isAdmin(user.email))
+      return reply.status(403).send({ code: "FORBIDDEN", message: "Access denied" });
+
+    return toViolationDto(violation);
+  });
+
   app.patch("/:violationId", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
     const { violationId } = req.params as { violationId: string };
@@ -30,18 +152,38 @@ export async function violationRoutes(app: FastifyInstance) {
 
     const violation = await prisma.ruleViolation.findFirst({
       where: { id: violationId },
-      include: { run: { include: { plan: { include: { project: true } } } } },
+      include: { run: { include: { plan: true } } },
     });
     if (!violation || !(await canReviewViolations(user.id, violation.run.plan.projectId)))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Violation not found" });
 
     const { action, reason, comment } = body.data;
-    if (action === "dismiss" && !(DISMISS_REASON_VALUES as readonly string[]).includes(reason))
-      return reply.status(400).send({ code: "INVALID_REASON", message: "Invalid dismiss reason" });
-    if (action === "defer" && !(DEFER_REASON_VALUES as readonly string[]).includes(reason))
-      return reply.status(400).send({ code: "INVALID_REASON", message: "Invalid defer reason" });
+    let toStatus: string;
+    let needsReason = false;
 
-    const toStatus = action === "dismiss" ? "dismissed" : "deferred";
+    switch (action) {
+      case "confirm":
+        toStatus = "confirmed";
+        break;
+      case "resolve":
+        toStatus = "resolved";
+        break;
+      case "dismiss":
+        toStatus = "dismissed";
+        needsReason = true;
+        if (!reason || !(DISMISS_REASON_VALUES as readonly string[]).includes(reason))
+          return reply.status(400).send({ code: "INVALID_REASON", message: "Valid dismiss reason required" });
+        break;
+      case "defer":
+        toStatus = "deferred";
+        needsReason = true;
+        if (!reason || !(DEFER_REASON_VALUES as readonly string[]).includes(reason))
+          return reply.status(400).send({ code: "INVALID_REASON", message: "Valid defer reason required" });
+        break;
+      default:
+        return reply.status(400).send({ code: "INVALID_ACTION", message: "Invalid action" });
+    }
+
     const fromStatus = violation.status;
 
     await prisma.$transaction([
@@ -50,7 +192,7 @@ export async function violationRoutes(app: FastifyInstance) {
           violationId,
           fromStatus,
           toStatus,
-          reason,
+          reason: reason ?? null,
           comment: comment ?? null,
           userId: user.id,
         },
@@ -59,8 +201,8 @@ export async function violationRoutes(app: FastifyInstance) {
         where: { id: violationId },
         data: {
           status: toStatus,
-          reason,
-          comment: comment ?? null,
+          reason: needsReason ? reason! : violation.reason,
+          comment: comment ?? violation.comment,
           decidedByUserId: user.id,
           decidedAt: new Date(),
         },
@@ -69,18 +211,12 @@ export async function violationRoutes(app: FastifyInstance) {
 
     const updated = await prisma.ruleViolation.findUnique({
       where: { id: violationId },
-      include: { decidedBy: { select: { id: true, email: true, name: true } } },
+      include: {
+        run: { include: { plan: { include: { project: true } } } },
+        decidedBy: { select: { id: true, email: true, name: true } },
+      },
     });
-    return {
-      id: updated!.id,
-      status: updated!.status,
-      reason: updated!.reason,
-      comment: updated!.comment,
-      decidedAt: updated!.decidedAt?.toISOString(),
-      decidedBy: updated!.decidedBy
-        ? { id: updated!.decidedBy.id, email: updated!.decidedBy.email, name: updated!.decidedBy.name }
-        : undefined,
-    };
+    return toViolationDto(updated!);
   });
 
   app.get("/:violationId/history", async (req, reply) => {

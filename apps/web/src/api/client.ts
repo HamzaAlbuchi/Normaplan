@@ -235,6 +235,9 @@ export const DEFER_REASONS = [
 export const REASON_LABELS: Record<string, string> = Object.fromEntries([
   ...DISMISS_REASONS.map((r) => [r.value, r.label]),
   ...DEFER_REASONS.map((r) => [r.value, r.label]),
+  ["waiting_for_client_input", "Warte auf Angaben des Auftraggebers"],
+  ["waiting_for_consultant_input", "Warte auf Stellungnahme des Fachplaners"],
+  ["non_blocking_for_current_phase", "Für aktuelle Phase nicht relevant"],
 ]);
 
 export interface ViolationHistoryEntry {
@@ -247,12 +250,53 @@ export interface ViolationHistoryEntry {
   user: { id: string; email: string; name?: string };
 }
 
+export interface ViolationListItem {
+  id: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  projectId: string;
+  projectName: string;
+  planId: string;
+  planName: string;
+  runId: string;
+  elementIds: string[];
+  ruleId: string;
+  ruleName: string;
+  actualValue?: number;
+  requiredValue?: number;
+  regulationRef?: string;
+  suggestion?: string;
+  detectedAt: string;
+  updatedAt: string;
+  reviewedBy?: { id: string; email: string; name?: string };
+  reviewedAt?: string;
+  reason?: string;
+  comment?: string;
+}
+
+export interface ViolationsListParams {
+  status?: string;
+  severity?: string;
+  projectId?: string;
+  ruleId?: string;
+  reviewedBy?: string;
+  sort?: "detectedAt" | "updatedAt";
+  order?: "asc" | "desc";
+  limit?: number;
+  offset?: number;
+}
+
 export const violationsApi = {
-  update: (violationId: string, data: { action: "dismiss" | "defer"; reason: string; comment?: string }) =>
-    api<{ id: string; status: string; reason?: string; comment?: string; decidedAt?: string }>(
-      `/violations/${violationId}`,
-      { method: "PATCH", body: data }
-    ),
+  list: (params?: ViolationsListParams) => {
+    const q = new URLSearchParams();
+    if (params) Object.entries(params).forEach(([k, v]) => v != null && q.set(k, String(v)));
+    return api<{ items: ViolationListItem[]; total: number }>(`/violations?${q}`);
+  },
+  get: (id: string) => api<ViolationListItem>(`/violations/${id}`),
+  update: (violationId: string, data: { action: "confirm" | "dismiss" | "defer" | "resolve"; reason?: string; comment?: string }) =>
+    api<ViolationListItem>(`/violations/${violationId}`, { method: "PATCH", body: data }),
   getHistory: (violationId: string) =>
     api<{ violationId: string; currentStatus: string; history: ViolationHistoryEntry[] }>(
       `/violations/${violationId}/history`

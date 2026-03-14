@@ -113,19 +113,20 @@ model RuleViolation {
   run             RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
   ruleId          String
   ruleName        String
-  severity        String
+  severity        String   // info | warning | error (mapped to critical in API)
   message         String
   suggestion      String?
   elementIds      String[]
   actualValue     Float?
   requiredValue   Float?
   regulationRef   String?
-  status          String   @default("open")
+  status          String   @default("open") // open | confirmed | dismissed | deferred | resolved
   reason          String?
   comment         String?
   decidedByUserId String?
   decidedBy       User?    @relation("decidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
   decidedAt       DateTime?
+  updatedAt       DateTime @updatedAt
 
   reviewHistory ViolationReview[]
 }

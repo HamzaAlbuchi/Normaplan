@@ -154,7 +154,8 @@ export default function Project() {
         Zurück zu Projekten
       </Link>
 
-      <div className="mb-8">
+      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
+        <div>
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{project?.name ?? "Projekt"}</h1>
         <p className="mt-1 text-sm text-slate-500">
           Grundrisse hochladen und Prüflauf starten.
@@ -170,6 +171,15 @@ export default function Project() {
             </span>
           )}
         </p>
+        </div>
+        {projectId && (
+          <Link
+            to={`/violations?projectId=${projectId}`}
+            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
+          >
+            Verstöße anzeigen
+          </Link>
+        )}
       </div>
 
       {project?.organizationId && user?.organizations?.some((o) => o.id === project.organizationId && ["owner", "manager"].includes(o.role)) && (
