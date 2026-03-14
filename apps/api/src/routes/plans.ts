@@ -25,7 +25,8 @@ export async function planRoutes(app: FastifyInstance) {
 
   app.post("/upload", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
-    const body = (await req.body()) as Record<string, unknown>;
+    const rawBody: unknown = req.body;
+    const body = (rawBody instanceof Promise ? await rawBody : rawBody) as Record<string, unknown> | undefined;
     const projectId = typeof body?.projectId === "string" ? body.projectId : undefined;
     const name = typeof body?.name === "string" ? body.name : undefined;
     const fileField = body?.file as { toBuffer?: () => Promise<Buffer>; _buf?: Buffer; filename?: string } | undefined;
