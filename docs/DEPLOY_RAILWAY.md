@@ -44,10 +44,11 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
    - `DATABASE_URL` = (paste the full URL from the Postgres service, e.g. `postgresql://user:pass@host:port/railway`)
    - `JWT_SECRET` = a long random string (e.g. generate with `openssl rand -hex 32`)
    - `NODE_ENV` = `production`
+   - `CORS_ORIGIN` = your **Web** app URL, e.g. `https://baupilot.up.railway.app` (so the browser allows API calls from the frontend; no trailing slash)
 
    If your Postgres service exposes a **Reference** (e.g. `${{Postgres.DATABASE_URL}}`), you can use that for `DATABASE_URL` so it stays in sync.
 
-9. Save and deploy. After deploy, open the API service → **Settings** → **Networking** → **Generate Domain**. Copy the public URL (e.g. `https://your-api-name.up.railway.app`). You’ll need it for the frontend.
+8. Save and deploy. After deploy, open the API service → **Settings** → **Networking** → **Generate Domain**. Copy the public URL (e.g. `https://your-api-name.up.railway.app`). You’ll need it for the frontend.
 
 **If you prefer not to use the Dockerfile:** use **Root Directory** `apps/api`, **Build Command** `npm install && npx prisma generate && npx tsc`, **Start Command** `npx prisma migrate deploy && node dist/index.js`. The Dockerfile is recommended.
 
@@ -169,10 +170,28 @@ Then Railway can reuse the install layer when only your code changes.
 
 ---
 
-## If the API build fails
+## Troubleshooting: “Still not working”
 
-- Ensure **Root Directory** is empty (repo root) so `pnpm install` sees the whole monorepo and workspace packages.
-- Ensure **Build Command** includes `pnpm run build:packages` so `@baupilot/types` and `@baupilot/rule-engine` are built before the API build.
+**1. Check what actually fails**
+
+- **Web URL** (e.g. `https://baupilot.up.railway.app`):
+  - Open **https://baupilot.up.railway.app/health** in the browser. You should see `{"status":"ok","service":"baupilot-web"}`. If you get 502 or “can’t connect”, the Web service isn’t responding → check **Web** service **Deployments** → **View Logs**. Look for “BauPilot web server starting” and “Listening on 0.0.0.0:…”. If those are missing, the process is crashing (e.g. “dist not found”).
+- **API URL** (e.g. `https://api-production-84833.up.railway.app`):
+  - Open **https://api-production-84833.up.railway.app/health**. You should see `{"status":"ok","service":"baupilot-api"}`. If not, check **API** service logs and variables (`DATABASE_URL`, `JWT_SECRET`).
+
+**2. Web loads but login/requests fail**
+
+- In the browser: **F12** → **Console** and **Network**. Try to log in and see if requests to the API are **blocked by CORS** (red message mentioning CORS or “blocked by CORS policy”).
+- **Fix:** On the **API** service, add variable **`CORS_ORIGIN`** = `https://baupilot.up.railway.app` (your exact Web URL, no trailing slash). Redeploy the API.
+- Also confirm the Web was **rebuilt** after setting **`VITE_API_URL`** (e.g. `https://api-production-84833.up.railway.app/api`). If that variable was added after the first deploy, trigger a **new deploy** of the Web so the frontend is built with the correct API URL.
+
+**3. 502 on the Web**
+
+- Railway expects the app to listen on `0.0.0.0` and the port from the **PORT** variable. The Dockerfile and serve script do this. If you still get 502, in **Web** logs check for “dist/ with index.html not found” or any exit before “Listening on”. If present, the build or copy of `dist` in the image failed; fix the Web Docker build and redeploy.
+
+**4. API build fails**
+
+- Use **Dockerfile path** `Dockerfile.api` and **Root Directory** empty. The Dockerfile only needs `apps/api` and does not use workspace packages.
 
 ---
 

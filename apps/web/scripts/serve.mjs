@@ -7,7 +7,16 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+// Keep process alive on unhandled errors so we don't get 502 from a single crash
+process.on("uncaughtException", (err) => {
+  console.error("uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason, p) => {
+  console.error("unhandledRejection:", reason, p);
+});
+
 console.log("BauPilot web server starting...");
+console.log("PORT env:", process.env.PORT);
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // In Docker runner: /app/scripts/serve.mjs -> dist is /app/dist (same level as scripts)
