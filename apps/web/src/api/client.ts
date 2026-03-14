@@ -9,10 +9,11 @@ function getAuthToken(): string | null {
   }
 }
 
-export async function api<T>(
-  path: string,
-  options: RequestInit & { body?: object | FormData } = {}
-): Promise<T> {
+type ApiOptions = Omit<RequestInit, "body"> & {
+  body?: Record<string, unknown> | FormData;
+};
+
+export async function api<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { body, ...rest } = options;
   const headers = new Headers(rest.headers);
   const token = getAuthToken();

@@ -1,6 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { plansApi, runsApi, type RunDetail, type Violation } from "../api/client";
+import { plansApi, runsApi, type Violation } from "../api/client";
 
 function ViolationCard({ v }: { v: Violation }) {
   const severityClass =
@@ -65,7 +65,7 @@ export default function PlanReport() {
   });
 
   const hasRun = !!run;
-  const canRun = plan?.status === "ready" && plan?.elements;
+  const canRun = Boolean(plan?.status === "ready" && plan?.elements);
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -112,7 +112,7 @@ export default function PlanReport() {
 
           {runMutation.isError && (
             <div className="mb-4 rounded-lg bg-red-50 text-red-700 text-sm p-3">
-              {runMutation.error instanceof Error ? runMutation.error.message : "Fehler"}
+              {runMutation.error instanceof Error ? runMutation.error.message : String(runMutation.error)}
             </div>
           )}
 
