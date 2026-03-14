@@ -15,12 +15,11 @@ COPY packages/types ./packages/types
 COPY packages/rule-engine ./packages/rule-engine
 COPY apps/web ./apps/web
 
-# Build: packages then web (VITE_API_URL can be set at build time via ARG)
+# Build web only (web app does not use @baupilot/types or rule-engine)
 ARG VITE_API_URL
-ENV VITE_API_URL=${VITE_API_URL}
-RUN pnpm --filter @baupilot/types build && \
-    pnpm --filter @baupilot/rule-engine build && \
-    pnpm --filter web build
+ENV VITE_API_URL=${VITE_API_URL:-/api}
+ENV NODE_OPTIONS=--max-old-space-size=4096
+RUN pnpm --filter web build
 
 # Production: only serve static files
 FROM node:20-slim AS runner
