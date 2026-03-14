@@ -82,7 +82,7 @@ The frontend must be built with the API URL and then served. You have two option
 
 8. Redeploy after setting `VITE_API_URL` so the build picks it up.
 
-**Note:** The web app’s `start` script runs `serve dist -s -l ${PORT:-3000}`. Railway sets `PORT`, so the app will listen on the correct port.
+**Important:** Use **Build Command** to produce the production bundle (`pnpm --filter web build`), and **Start Command** `pnpm --filter web start` to serve it. Do **not** run `vite` or `pnpm run dev` in production—that runs the dev server on 5173 and is not exposed. The start script serves the built `dist/` on **0.0.0.0:PORT** so Railway can route traffic to it.
 
 ### Option B: Frontend on Vercel / Netlify
 
