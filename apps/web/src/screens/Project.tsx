@@ -45,9 +45,7 @@ export default function Project() {
     e.preventDefault();
     e.stopPropagation();
     if (!window.confirm(`Plan „${plan.name}" wirklich löschen?`)) return;
-    deletePlanMutation.mutate(plan.id, {
-      onSuccess: () => {},
-    });
+    deletePlanMutation.mutate(plan.id);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -57,69 +55,86 @@ export default function Project() {
     setUploading(true);
     uploadMutation.mutate(
       { file, name: file.name },
-      {
-        onSettled: () => setUploading(false),
-      }
+      { onSettled: () => setUploading(false) }
     );
   };
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <Link to="/" className="text-sm text-primary-600 hover:underline mb-4 inline-block">
-        ← Zurück zu Projekten
+    <div>
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+      >
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Zurück zu Projekten
       </Link>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-1">{project?.name ?? "Projekt"}</h1>
-      <p className="text-slate-600 mb-6">Grundrisse hochladen und Prüflauf starten.</p>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-6 mb-8">
-        <h2 className="font-medium text-slate-800 mb-2">Plan hochladen</h2>
-        <p className="text-sm text-slate-500 mb-4">
-          Laden Sie eine <strong>JSON-</strong> oder <strong>PDF-</strong>Datei mit Plan-Elementen hoch (Raum, Flur, Türen, Fenster, Treppen, Rettungsweg).
-        </p>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".json,.pdf"
-          onChange={handleFileChange}
-          disabled={uploading}
-          className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-primary-50 file:text-primary-700"
-        />
-        {uploadError && (
-          <p className="mt-2 text-sm text-red-600">{uploadError}</p>
-        )}
-        {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
+      <div className="mb-8">
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{project?.name ?? "Projekt"}</h1>
+        <p className="mt-1 text-sm text-slate-500">Grundrisse hochladen und Prüflauf starten.</p>
       </div>
 
-      <h2 className="font-medium text-slate-800 mb-3">Pläne in diesem Projekt</h2>
+      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900">Plan hochladen</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          JSON- oder PDF-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege).
+        </p>
+        <div className="mt-4">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".json,.pdf"
+            onChange={handleFileChange}
+            disabled={uploading}
+            className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+          />
+          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+          {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
+        </div>
+      </div>
+
+      <h2 className="text-sm font-semibold text-slate-900 mb-3">Pläne in diesem Projekt</h2>
+
       {isLoading ? (
-        <p className="text-slate-500">Lade Pläne…</p>
+        <p className="text-sm text-slate-500">Lade Pläne…</p>
       ) : plans.length === 0 ? (
-        <p className="text-slate-500">Noch keine Pläne. Laden Sie oben eine JSON-Plan-Datei hoch.</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
+          <p className="text-sm text-slate-500">Noch keine Pläne.</p>
+          <p className="mt-1 text-sm text-slate-400">Laden Sie oben eine Datei hoch.</p>
+        </div>
       ) : (
         <ul className="space-y-3">
           {plans.map((p: PlanSummary) => (
-            <li key={p.id} className="flex items-stretch gap-2">
-              <Link
-                to={`/plan/${p.id}`}
-                className="flex-1 block rounded-xl border border-slate-200 bg-white p-4 hover:border-primary-300 hover:bg-primary-50/30 transition"
-              >
-                <span className="font-medium text-slate-800">{p.name}</span>
-                <span className="ml-2 text-slate-500 text-sm">
-                  {p.fileName} · Status: {p.status}
+            <li key={p.id} className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+              <Link to={`/plan/${p.id}`} className="min-w-0 flex-1">
+                <span className="block font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                  {p.name}
                 </span>
-                {p.lastRunId && (
-                  <span className="ml-2 text-primary-600 text-sm">· Bericht anzeigen</span>
-                )}
+                <span className="block text-sm text-slate-500 truncate">
+                  {p.fileName} · {p.status}
+                  {p.lastRunId && <span className="text-blue-600"> · Bericht</span>}
+                </span>
               </Link>
               <button
                 type="button"
                 onClick={(e) => handleDeletePlan(p, e)}
                 disabled={deletePlanMutation.isPending}
-                className="px-3 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50"
+                className="flex-shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
                 title="Plan löschen"
               >
                 Löschen
               </button>
+              <Link
+                to={`/plan/${p.id}`}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                aria-label="Bericht öffnen"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </Link>
             </li>
           ))}
         </ul>

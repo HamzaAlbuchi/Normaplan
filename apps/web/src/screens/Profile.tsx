@@ -67,15 +67,18 @@ export default function Profile() {
   }
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8">
-      <h1 className="text-2xl font-semibold text-slate-800">Profil & Einstellungen</h1>
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Profil & Einstellungen</h1>
+        <p className="mt-1 text-sm text-slate-500">Kontodaten und Passwort verwalten.</p>
+      </div>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-medium text-slate-800 mb-4">Kontoinformationen</h2>
-        <p className="text-sm text-slate-600 mb-4">E-Mail: {profile.email}</p>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900">Kontoinformationen</h2>
+        <p className="mt-1 text-sm text-slate-500 mb-4">E-Mail: {profile.email}</p>
         <form onSubmit={handleSaveProfile} className="flex flex-wrap items-end gap-3">
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
+            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
               Name (optional)
             </label>
             <input
@@ -84,13 +87,13 @@ export default function Profile() {
               value={nameEdit || profile.name || ""}
               onChange={(e) => setNameEdit(e.target.value)}
               placeholder="Ihr Name"
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <button
             type="submit"
             disabled={updateProfileMutation.isPending}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50"
+            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
           >
             {updateProfileMutation.isPending ? "Speichern…" : "Speichern"}
           </button>
@@ -102,8 +105,8 @@ export default function Profile() {
         )}
       </section>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
-        <h2 className="text-lg font-medium text-slate-800 mb-4">Passwort ändern</h2>
+      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="text-sm font-semibold text-slate-900 mb-4">Passwort ändern</h2>
         <form onSubmit={handleChangePassword} className="space-y-4">
           <div>
             <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-700 mb-1">
@@ -115,7 +118,7 @@ export default function Profile() {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -129,7 +132,7 @@ export default function Profile() {
               onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <div>
@@ -142,13 +145,13 @@ export default function Profile() {
               value={newPasswordConfirm}
               onChange={(e) => setNewPasswordConfirm(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
           </div>
           <button
             type="submit"
             disabled={changePasswordMutation.isPending}
-            className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50"
+            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
           >
             {changePasswordMutation.isPending ? "Ändern…" : "Passwort ändern"}
           </button>

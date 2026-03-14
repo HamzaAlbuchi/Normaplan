@@ -121,8 +121,8 @@ function ReportWithExport({
   };
 
   return (
-    <div ref={printRef} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
+    <div ref={printRef} className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="BauPilot" className="h-16 object-contain flex-shrink-0" />
           <div>
@@ -136,7 +136,7 @@ function ReportWithExport({
         <button
           type="button"
           onClick={handleExportPdf}
-          className="no-print px-4 py-2 border border-slate-300 rounded-lg text-slate-700 text-sm font-medium hover:bg-slate-50"
+          className="no-print rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
         >
           Als PDF exportieren
         </button>
@@ -203,26 +203,31 @@ export default function PlanReport() {
   const canRun = Boolean(plan?.status === "ready" && plan?.elements);
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl">
       <Link
         to={plan ? `/project/${plan.projectId}` : "/"}
-        className="text-sm text-primary-600 hover:underline mb-4 inline-block"
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 mb-6 transition-colors"
       >
-        ← Zurück zum Projekt
+        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Zurück zum Projekt
       </Link>
 
       {planLoading || !plan ? (
-        <p className="text-slate-500">Lade Plan…</p>
+        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+          <p className="text-sm text-slate-500">Plan wird geladen…</p>
+        </div>
       ) : (
         <>
-          <div className="flex items-start justify-between gap-4 mb-6">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-800">{plan.name}</h1>
-              <p className="text-slate-500 text-sm">
+              <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{plan.name}</h1>
+              <p className="mt-1 text-sm text-slate-500">
                 {plan.fileName} · Status: {plan.status}
               </p>
               {plan.extractionError && (
-                <p className="mt-2 text-amber-700 text-sm bg-amber-50 p-2 rounded">
+                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                   {plan.extractionError}
                 </p>
               )}
@@ -232,7 +237,7 @@ export default function PlanReport() {
                 type="button"
                 onClick={() => runMutation.mutate()}
                 disabled={runMutation.isPending}
-                className="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 disabled:opacity-50"
+                className="flex-shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
               >
                 {runMutation.isPending ? "Prüfe…" : "Prüflauf starten"}
               </button>
@@ -240,13 +245,13 @@ export default function PlanReport() {
           </div>
 
           {!canRun && plan.status !== "ready" && (
-            <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-800 text-sm mb-6">
-              Laden Sie eine gültige JSON-Plan-Datei hoch, um die Regelprüfung zu starten.
+            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              Laden Sie eine gültige JSON- oder PDF-Plan-Datei hoch, um die Regelprüfung zu starten.
             </div>
           )}
 
           {runMutation.isError && (
-            <div className="mb-4 rounded-lg bg-red-50 text-red-700 text-sm p-3">
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
               {runMutation.error instanceof Error ? runMutation.error.message : String(runMutation.error)}
             </div>
           )}
@@ -256,12 +261,16 @@ export default function PlanReport() {
           )}
 
           {!hasRun && canRun && !runMutation.isPending && (
-            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-500">
-              Klicken Sie auf „Prüflauf starten“, um die Bauvorschriften-Checks auszuführen.
+            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
+              <p className="text-sm text-slate-500">Klicken Sie auf „Prüflauf starten“, um die Bauvorschriften-Checks auszuführen.</p>
             </div>
           )}
 
-          {runLoading && runId && !run && <p className="text-slate-500">Lade Bericht…</p>}
+          {runLoading && runId && !run && (
+            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
+              <p className="text-sm text-slate-500">Bericht wird geladen…</p>
+            </div>
+          )}
         </>
       )}
     </div>

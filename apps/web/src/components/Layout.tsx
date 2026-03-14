@@ -1,44 +1,45 @@
-import { Outlet, Link, useNavigate } from "react-router-dom";
+import { Outlet, Link } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import { useEffect } from "react";
+import UserMenu from "./UserMenu";
 
 export default function Layout() {
-  const { token, user, logout, loadFromStorage } = useAuthStore();
-  const navigate = useNavigate();
+  const { token, loadFromStorage } = useAuthStore();
 
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
 
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
-
   if (!token) return null;
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2 text-primary-600 hover:opacity-90">
-          <img src="/logo.png" alt="BauPilot" className="h-12 object-contain" />
-          <span className="text-xl font-semibold">BauPilot</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/profile" className="text-sm text-slate-600 hover:text-primary-600">
-            Profil
-          </Link>
-          <span className="text-sm text-slate-500">{user?.email}</span>
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="text-sm text-slate-500 hover:text-slate-800"
-          >
-            Abmelden
-          </button>
+    <div className="min-h-screen bg-slate-50">
+      <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white">
+        <div className="mx-auto flex h-full max-w-6xl items-center justify-between px-4 sm:px-6">
+          <div className="flex items-center gap-8">
+            <Link
+              to="/"
+              className="flex items-center gap-2.5 text-slate-800 hover:text-slate-900 transition-colors"
+            >
+              <img src="/logo.png" alt="BauPilot" className="h-8 w-8 object-contain" />
+              <span className="text-lg font-semibold tracking-tight">BauPilot</span>
+            </Link>
+            <nav className="hidden sm:flex items-center gap-1">
+              <Link
+                to="/"
+                className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+              >
+                Projekte
+              </Link>
+            </nav>
+          </div>
+          <div className="flex items-center gap-4">
+            <UserMenu />
+          </div>
         </div>
       </header>
-      <main className="flex-1 p-6">
+
+      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
         <Outlet />
       </main>
     </div>
