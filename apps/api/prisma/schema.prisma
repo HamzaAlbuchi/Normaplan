@@ -19,6 +19,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   projects Project[]
+  violationDecisions RuleViolation[] @relation("decidedBy")
+  reviewHistory ViolationReview[]
 }
 
 model Project {
@@ -64,16 +66,40 @@ model RuleRun {
 }
 
 model RuleViolation {
-  id           String   @id @default(cuid())
-  runId        String
-  run          RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  ruleId       String
-  ruleName     String
-  severity     String   // warning | error | info
-  message      String
-  suggestion   String?
-  elementIds   String[]  // array of element id strings
-  actualValue  Float?
-  requiredValue Float?
-  regulationRef String?
+  id             String   @id @default(cuid())
+  runId          String
+  run            RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ruleId         String
+  ruleName       String
+  severity       String   // warning | error | info
+  message        String
+  suggestion     String?
+  elementIds     String[]  // array of element id strings
+  actualValue    Float?
+  requiredValue  Float?
+  regulationRef  String?
+  // Review workflow
+  status         String   @default("open") // open | confirmed | dismissed | deferred | resolved
+  reason         String?  // dismiss/defer reason code
+  comment        String?  // optional free-text
+  decidedByUserId String?
+  decidedBy      User?    @relation(fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedAt      DateTime?
+
+  reviewHistory ViolationReview[]
+}
+
+model ViolationReview {
+  id          String   @id @default(cuid())
+  violationId String
+  violation   RuleViolation @relation(fields: [violationId], references: [id], onDelete: Cascade)
+  fromStatus  String
+  toStatus    String
+  reason      String?
+  comment     String?
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@index([violationId])
 }

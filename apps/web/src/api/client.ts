@@ -139,6 +139,7 @@ export const plansApi = {
 
 // Runs
 export interface Violation {
+  id?: string;
   ruleId: string;
   ruleName: string;
   severity: string;
@@ -148,7 +149,53 @@ export interface Violation {
   actualValue?: number;
   requiredValue?: number;
   regulationRef?: string;
+  status?: string;
+  reason?: string;
+  comment?: string;
+  decidedAt?: string;
 }
+
+// Violation review
+export const DISMISS_REASONS = [
+  { value: "false_positive", label: "Falscher Treffer (False Positive)" },
+  { value: "not_applicable", label: "Nicht anwendbar" },
+  { value: "extraction_error", label: "Extraktionsfehler" },
+  { value: "exception_case", label: "Ausnahmefall" },
+] as const;
+
+export const DEFER_REASONS = [
+  { value: "will_fix_later", label: "Wird später behoben" },
+  { value: "waiting_client_input", label: "Warte auf Angaben des Auftraggebers" },
+  { value: "waiting_consultant_input", label: "Warte auf Stellungnahme des Fachplaners" },
+  { value: "non_blocking_stage", label: "Für aktuelle Phase nicht relevant" },
+] as const;
+
+export const REASON_LABELS: Record<string, string> = Object.fromEntries([
+  ...DISMISS_REASONS.map((r) => [r.value, r.label]),
+  ...DEFER_REASONS.map((r) => [r.value, r.label]),
+]);
+
+export interface ViolationHistoryEntry {
+  id: string;
+  fromStatus: string;
+  toStatus: string;
+  reason?: string;
+  comment?: string;
+  createdAt: string;
+  user: { id: string; email: string; name?: string };
+}
+
+export const violationsApi = {
+  update: (violationId: string, data: { action: "dismiss" | "defer"; reason: string; comment?: string }) =>
+    api<{ id: string; status: string; reason?: string; comment?: string; decidedAt?: string }>(
+      `/violations/${violationId}`,
+      { method: "PATCH", body: data }
+    ),
+  getHistory: (violationId: string) =>
+    api<{ violationId: string; currentStatus: string; history: ViolationHistoryEntry[] }>(
+      `/violations/${violationId}/history`
+    ),
+};
 
 export interface RunDetail {
   id: string;

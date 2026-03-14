@@ -81,7 +81,8 @@ export async function runRoutes(app: FastifyInstance) {
       violationCount: withViolations!.violationCount,
       warningCount: withViolations!.warningCount,
       errorCount: withViolations!.errorCount,
-      violations: withViolations!.violations.map((v: { ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null }) => ({
+      violations: withViolations!.violations.map((v: { id: string; ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null; status: string; reason: string | null; comment: string | null; decidedAt: Date | null }) => ({
+        id: v.id,
         ruleId: v.ruleId,
         ruleName: v.ruleName,
         severity: v.severity,
@@ -91,6 +92,10 @@ export async function runRoutes(app: FastifyInstance) {
         actualValue: v.actualValue,
         requiredValue: v.requiredValue,
         regulationRef: v.regulationRef,
+        status: v.status,
+        reason: v.reason,
+        comment: v.comment,
+        decidedAt: v.decidedAt?.toISOString(),
       })),
     });
   });
@@ -112,7 +117,8 @@ export async function runRoutes(app: FastifyInstance) {
       violationCount: run.violationCount,
       warningCount: run.warningCount,
       errorCount: run.errorCount,
-      violations: run.violations.map((v: { ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null }) => ({
+      violations: run.violations.map((v: { id: string; ruleId: string; ruleName: string; severity: string; message: string; suggestion: string | null; elementIds: string[]; actualValue: number | null; requiredValue: number | null; regulationRef: string | null; status: string; reason: string | null; comment: string | null; decidedAt: Date | null }) => ({
+        id: v.id,
         ruleId: v.ruleId,
         ruleName: v.ruleName,
         severity: v.severity,
@@ -122,6 +128,10 @@ export async function runRoutes(app: FastifyInstance) {
         actualValue: v.actualValue,
         requiredValue: v.requiredValue,
         regulationRef: v.regulationRef,
+        status: v.status,
+        reason: v.reason,
+        comment: v.comment,
+        decidedAt: v.decidedAt?.toISOString(),
       })),
     };
   });

@@ -1,7 +1,10 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { plansApi, runsApi, type Violation, type RunDetail } from "../api/client";
+import { plansApi, runsApi, violationsApi, REASON_LABELS, type Violation, type RunDetail } from "../api/client";
+import ReviewModal, { STATUS_LABELS } from "../components/ReviewModal";
+import HistoryModal from "../components/HistoryModal";
+import { useAuthStore } from "../store/auth";
 
 const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
@@ -21,18 +24,50 @@ function groupViolations(violations: Violation[]): { error: Violation[]; warning
   return { error, warning, info };
 }
 
-function ViolationCard({ v }: { v: Violation }) {
+function ViolationCard({
+  v,
+  onDismiss,
+  onDefer,
+  onShowHistory,
+  isManager,
+}: {
+  v: Violation;
+  onDismiss?: (id: string) => void;
+  onDefer?: (id: string) => void;
+  onShowHistory?: (id: string) => void;
+  isManager?: boolean;
+}) {
+  const status = v.status ?? "open";
+  const canReview = status === "open" && v.id;
   const severityClass =
     v.severity === "error"
       ? "border-l-4 border-red-500 bg-red-50/50"
       : v.severity === "warning"
         ? "border-l-4 border-amber-500 bg-amber-50/50"
         : "border-l-4 border-slate-300 bg-slate-50";
+  const statusBadgeClass =
+    status === "dismissed"
+      ? "bg-slate-100 text-slate-600"
+      : status === "deferred"
+        ? "bg-amber-100 text-amber-800"
+        : status === "resolved"
+          ? "bg-emerald-100 text-emerald-800"
+          : status === "confirmed"
+            ? "bg-blue-100 text-blue-800"
+            : "bg-slate-100 text-slate-500";
+
   return (
     <div className={`rounded-r-lg p-4 ${severityClass}`}>
       <div className="flex items-start justify-between gap-2">
-        <div>
-          <span className="text-xs font-medium uppercase text-slate-500">{v.ruleName}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-medium uppercase text-slate-500">{v.ruleName}</span>
+            {status !== "open" && (
+              <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass}`}>
+                {STATUS_LABELS[status] ?? status}
+              </span>
+            )}
+          </div>
           <p className="mt-1 text-slate-800">{v.message}</p>
           {v.suggestion && (
             <p className="mt-2 text-sm text-slate-600">
@@ -54,6 +89,46 @@ function ViolationCard({ v }: { v: Violation }) {
       {Array.isArray(v.elementIds) && v.elementIds.length > 0 && (
         <p className="mt-2 text-xs text-slate-500">Betroffene Elemente: {v.elementIds.join(", ")}</p>
       )}
+      {(status === "dismissed" || status === "deferred") && (v.reason || v.comment) && (
+        <p className="mt-2 text-xs text-slate-500">
+          {v.reason && <span>Grund: {REASON_LABELS[v.reason] ?? v.reason}</span>}
+          {v.comment && <span className="block mt-0.5">Kommentar: {v.comment}</span>}
+          {v.decidedAt && (
+            <span className="block mt-0.5 text-slate-400">
+              Entscheidung: {new Date(v.decidedAt).toLocaleString("de-DE")}
+            </span>
+          )}
+        </p>
+      )}
+      <div className="mt-3 flex flex-wrap gap-2 no-print">
+        {canReview && onDismiss && (
+          <button
+            type="button"
+            onClick={() => onDismiss(v.id!)}
+            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            Abweisen
+          </button>
+        )}
+        {canReview && onDefer && (
+          <button
+            type="button"
+            onClick={() => onDefer(v.id!)}
+            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            Zurückstellen
+          </button>
+        )}
+        {isManager && v.id && onShowHistory && (
+          <button
+            type="button"
+            onClick={() => onShowHistory(v.id!)}
+            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
+          >
+            Verlauf
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -63,11 +138,19 @@ function ViolationSection({
   count,
   violations,
   severity,
+  onDismiss,
+  onDefer,
+  onShowHistory,
+  isManager,
 }: {
   title: string;
   count: number;
   violations: Violation[];
   severity: "error" | "warning" | "info";
+  onDismiss?: (id: string) => void;
+  onDefer?: (id: string) => void;
+  onShowHistory?: (id: string) => void;
+  isManager?: boolean;
 }) {
   if (violations.length === 0) return null;
   const bg =
@@ -82,8 +165,14 @@ function ViolationSection({
       <p className="text-sm text-slate-600 mb-4">{count} {count === 1 ? "Eintrag" : "Einträge"}</p>
       <ul className="space-y-4">
         {violations.map((v, i) => (
-          <li key={i}>
-            <ViolationCard v={v} />
+          <li key={v.id ?? i}>
+            <ViolationCard
+              v={v}
+              onDismiss={onDismiss}
+              onDefer={onDefer}
+              onShowHistory={onShowHistory}
+              isManager={isManager}
+            />
           </li>
         ))}
       </ul>
@@ -94,9 +183,19 @@ function ViolationSection({
 function ReportWithExport({
   plan,
   run,
+  planId,
+  onDismiss,
+  onDefer,
+  onShowHistory,
+  isManager,
 }: {
   plan: { name: string; fileName: string };
   run: RunDetail;
+  planId: string;
+  onDismiss?: (id: string) => void;
+  onDefer?: (id: string) => void;
+  onShowHistory?: (id: string) => void;
+  isManager?: boolean;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
   const grouped = Array.isArray(run.violations)
@@ -154,18 +253,30 @@ function ReportWithExport({
               count={grouped.error.length}
               violations={grouped.error}
               severity="error"
+              onDismiss={onDismiss}
+              onDefer={onDefer}
+              onShowHistory={onShowHistory}
+              isManager={isManager}
             />
             <ViolationSection
               title={SEVERITY_LABELS.warning}
               count={grouped.warning.length}
               violations={grouped.warning}
               severity="warning"
+              onDismiss={onDismiss}
+              onDefer={onDefer}
+              onShowHistory={onShowHistory}
+              isManager={isManager}
             />
             <ViolationSection
               title={SEVERITY_LABELS.info}
               count={grouped.info.length}
               violations={grouped.info}
               severity="info"
+              onDismiss={onDismiss}
+              onDefer={onDefer}
+              onShowHistory={onShowHistory}
+              isManager={isManager}
             />
           </div>
         )}
@@ -177,6 +288,10 @@ function ReportWithExport({
 export default function PlanReport() {
   const { planId } = useParams<{ planId: string }>();
   const queryClient = useQueryClient();
+  const user = useAuthStore((s) => s.user);
+  const [reviewViolationId, setReviewViolationId] = useState<string | null>(null);
+  const [reviewAction, setReviewAction] = useState<"dismiss" | "defer">("dismiss");
+  const [historyViolationId, setHistoryViolationId] = useState<string | null>(null);
 
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ["plan", planId],
@@ -199,6 +314,36 @@ export default function PlanReport() {
     queryFn: () => runsApi.get(runId!),
     enabled: !!runId,
   });
+
+  const { data: historyData } = useQuery({
+    queryKey: ["violation-history", historyViolationId],
+    queryFn: () => violationsApi.getHistory(historyViolationId!),
+    enabled: !!historyViolationId,
+  });
+
+  const reviewMutation = useMutation({
+    mutationFn: ({ id, action, reason, comment }: { id: string; action: "dismiss" | "defer"; reason: string; comment?: string }) =>
+      violationsApi.update(id, { action, reason, comment }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["run", runId] });
+      queryClient.invalidateQueries({ queryKey: ["plan", planId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
+      setReviewViolationId(null);
+    },
+  });
+
+  const handleDismiss = (id: string) => {
+    setReviewViolationId(id);
+    setReviewAction("dismiss");
+  };
+  const handleDefer = (id: string) => {
+    setReviewViolationId(id);
+    setReviewAction("defer");
+  };
+  const handleReviewSubmit = (reason: string, comment?: string) => {
+    if (!reviewViolationId) return;
+    reviewMutation.mutate({ id: reviewViolationId, action: reviewAction, reason, comment });
+  };
 
   const hasRun = !!run;
   const canRun = Boolean(plan?.status === "ready" && plan?.elements);
@@ -258,7 +403,31 @@ export default function PlanReport() {
           )}
 
           {hasRun && run && (
-            <ReportWithExport plan={plan} run={run} />
+            <>
+              <ReportWithExport
+                plan={plan}
+                run={run}
+                planId={planId!}
+                onDismiss={handleDismiss}
+                onDefer={handleDefer}
+                onShowHistory={(id) => setHistoryViolationId(id)}
+                isManager={true}
+              />
+              <ReviewModal
+                isOpen={!!reviewViolationId}
+                onClose={() => setReviewViolationId(null)}
+                action={reviewAction}
+                onSubmit={handleReviewSubmit}
+                isPending={reviewMutation.isPending}
+              />
+              <HistoryModal
+                isOpen={!!historyViolationId}
+                onClose={() => setHistoryViolationId(null)}
+                violationId={historyViolationId ?? ""}
+                currentStatus={historyData?.currentStatus ?? "open"}
+                history={historyData?.history ?? []}
+              />
+            </>
           )}
 
           {!hasRun && canRun && !runMutation.isPending && (
