@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
+import { canWorkOnProject } from "../rbac.js";
 import { nanoid } from "nanoid";
 import { runRules } from "../rules/index.js";
 import type { PlanElements, RuleViolation } from "../types.js";
@@ -107,7 +108,7 @@ export async function runRoutes(app: FastifyInstance) {
       where: { id: runId },
       include: { plan: { include: { project: true } }, violations: true },
     });
-    if (!run || run.plan.project.userId !== user.id)
+    if (!run || !(await canWorkOnProject(user.id, run.plan.projectId)))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Run not found" });
 
     return {

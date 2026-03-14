@@ -37,22 +37,26 @@ export async function adminRoutes(app: FastifyInstance) {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-        _count: {
-          select: { projects: true },
-        },
-        projects: {
+        memberships: {
           include: {
-            _count: { select: { plans: true } },
-            plans: {
+            organization: {
               include: {
-                _count: { select: { runs: true } },
-                runs: {
-                  select: {
-                    id: true,
-                    checkedAt: true,
-                    violationCount: true,
-                    warningCount: true,
-                    errorCount: true,
+                projects: {
+                  include: {
+                    _count: { select: { plans: true } },
+                    plans: {
+                      include: {
+                        runs: {
+                          select: {
+                            id: true,
+                            checkedAt: true,
+                            violationCount: true,
+                            warningCount: true,
+                            errorCount: true,
+                          },
+                        },
+                      },
+                    },
                   },
                 },
               },
@@ -63,9 +67,10 @@ export async function adminRoutes(app: FastifyInstance) {
     });
 
     return users.map((u) => {
-      const totalPlans = u.projects.reduce((s, p) => s + p._count.plans, 0);
-      const totalRuns = u.projects.reduce((s, p) => s + p.plans.reduce((sp, pl) => sp + pl._count.runs, 0), 0);
-      const totalViolations = u.projects.reduce((s, p) => {
+      const projects = u.memberships.flatMap((m) => m.organization.projects);
+      const totalPlans = projects.reduce((s, p) => s + p._count.plans, 0);
+      const totalRuns = projects.reduce((s, p) => s + p.plans.reduce((sp, pl) => sp + pl.runs.length, 0), 0);
+      const totalViolations = projects.reduce((s, p) => {
         return s + p.plans.reduce((sp, pl) => {
           return sp + pl.runs.reduce((sr, r) => sr + r.violationCount, 0);
         }, 0);
@@ -76,11 +81,11 @@ export async function adminRoutes(app: FastifyInstance) {
         email: u.email,
         name: u.name ?? undefined,
         createdAt: u.createdAt.toISOString(),
-        projectCount: u._count.projects,
+        projectCount: projects.length,
         planCount: totalPlans,
         runCount: totalRuns,
         violationCount: totalViolations,
-        projects: u.projects.map((p) => ({
+        projects: projects.map((p) => ({
           id: p.id,
           name: p.name,
           state: p.state,

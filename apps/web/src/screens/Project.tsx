@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, plansApi, type PlanSummary } from "../api/client";
+import { projectsApi, plansApi, membershipsApi, useAuthStore, type PlanSummary } from "../api/client";
 
 const STATE_NAMES: Record<string, string> = {
   BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
@@ -10,9 +10,83 @@ const STATE_NAMES: Record<string, string> = {
   ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen",
 };
 
+function ProjectAssignments({ projectId, organizationId }: { projectId: string; organizationId: string }) {
+  const queryClient = useQueryClient();
+  const { data: assignments = [] } = useQuery({
+    queryKey: ["project-assignments", projectId],
+    queryFn: () => projectsApi.listAssignments(projectId),
+  });
+  const { data: members = [] } = useQuery({
+    queryKey: ["members", organizationId],
+    queryFn: () => membershipsApi.listByOrg(organizationId),
+    enabled: !!organizationId,
+  });
+  const architects = members.filter((m) => m.role === "architect");
+  const addMutation = useMutation({
+    mutationFn: (userId: string) => projectsApi.addAssignment(projectId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project-assignments", projectId] }),
+  });
+  const removeMutation = useMutation({
+    mutationFn: (userId: string) => projectsApi.removeAssignment(projectId, userId),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["project-assignments", projectId] }),
+  });
+  const assignedIds = new Set(assignments.map((a) => a.userId));
+  const available = architects.filter((a) => !assignedIds.has(a.userId));
+
+  return (
+    <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <h2 className="text-sm font-semibold text-slate-900">Architekten zuweisen</h2>
+      <p className="mt-1 text-sm text-slate-500">Architekten können Pläne hochladen und Prüfläufe starten.</p>
+      {assignments.length > 0 && (
+        <ul className="mt-3 space-y-2">
+          {assignments.map((a) => (
+            <li key={a.userId} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
+              <span className="text-sm">{a.name || a.email}</span>
+              <button
+                type="button"
+                onClick={() => removeMutation.mutate(a.userId)}
+                disabled={removeMutation.isPending}
+                className="text-xs text-slate-500 hover:text-red-600"
+              >
+                Entfernen
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+      {available.length > 0 && (
+        <div className="mt-3">
+          <select
+            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+            onChange={(e) => {
+              const v = e.target.value;
+              if (v) { addMutation.mutate(v); e.target.value = ""; }
+            }}
+          >
+            <option value="">Architekt hinzufügen…</option>
+            {available.map((a) => (
+              <option key={a.userId} value={a.userId}>{a.name || a.email}</option>
+            ))}
+          </select>
+        </div>
+      )}
+      {architects.length === 0 && (
+        <p className="mt-2 text-xs text-slate-500">Laden Sie zuerst Architekten ins Büro ein.</p>
+      )}
+    </div>
+  );
+}
+
 export default function Project() {
   const { projectId } = useParams<{ projectId: string }>();
+  const user = useAuthStore((s) => s.user);
   const [uploading, setUploading] = useState(false);
+  const canEdit = project?.organizationId && user?.organizations?.some(
+    (o) => o.id === project.organizationId && !["viewer"].includes(o.role)
+  );
+  const canWork = project?.organizationId && user?.organizations?.some(
+    (o) => o.id === project.organizationId && ["owner", "manager", "architect", "reviewer"].includes(o.role)
+  );
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -82,6 +156,9 @@ export default function Project() {
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{project?.name ?? "Projekt"}</h1>
         <p className="mt-1 text-sm text-slate-500">
           Grundrisse hochladen und Prüflauf starten.
+          {project?.organizationName && (
+            <span className="block mt-0.5 text-slate-400">Büro: {project.organizationName}</span>
+          )}
           {project?.zipCode && (
             <span className="block mt-0.5 text-slate-500">
               Standort: {project.zipCode}
@@ -93,6 +170,11 @@ export default function Project() {
         </p>
       </div>
 
+      {project?.organizationId && user?.organizations?.some((o) => o.id === project.organizationId && ["owner", "manager"].includes(o.role)) && (
+        <ProjectAssignments projectId={projectId!} organizationId={project.organizationId} />
+      )}
+
+      {canWork && (
       <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Plan hochladen</h2>
         <p className="mt-1 text-sm text-slate-500">
@@ -111,6 +193,7 @@ export default function Project() {
           {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
         </div>
       </div>
+      )}
 
       <h2 className="text-sm font-semibold text-slate-900 mb-3">Pläne in diesem Projekt</h2>
 
@@ -134,6 +217,7 @@ export default function Project() {
                   {p.lastRunId && <span className="text-blue-600"> · Bericht</span>}
                 </span>
               </Link>
+              {canEdit && (
               <button
                 type="button"
                 onClick={(e) => handleDeletePlan(p, e)}
@@ -143,6 +227,7 @@ export default function Project() {
               >
                 Löschen
               </button>
+              )}
               <Link
                 to={`/plan/${p.id}`}
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"

@@ -5,6 +5,7 @@ import path from "node:path";
 import { nanoid } from "nanoid";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
+import { canWorkOnProject, listAccessibleProjectIds } from "../rbac.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
 import { parsePlanFromPdf } from "../parser/pdfParser.js";
@@ -41,7 +42,9 @@ export async function planRoutes(app: FastifyInstance) {
     if (!buf || !filename) return reply.status(400).send({ code: "MISSING_FILE", message: "No file uploaded" });
     if (!projectId) return reply.status(400).send({ code: "MISSING_PROJECT_ID", message: "projectId required" });
 
-    const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
+    if (!(await canWorkOnProject(user.id, projectId)))
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
 
     const ext = path.extname(filename).toLowerCase();
@@ -118,7 +121,7 @@ export async function planRoutes(app: FastifyInstance) {
       where: { id: planId },
       include: { project: true },
     });
-    if (!plan || plan.project.userId !== user.id)
+    if (!plan || !(await listAccessibleProjectIds(user.id)).includes(plan.projectId))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
 
     const lastRun = await prisma.ruleRun.findFirst({
@@ -147,7 +150,7 @@ export async function planRoutes(app: FastifyInstance) {
       where: { id: planId },
       include: { project: true },
     });
-    if (!plan || plan.project.userId !== user.id)
+    if (!plan || !(await canWorkOnProject(user.id, plan.projectId)))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
     if (plan.filePath) {
       const fullPath = path.join(config.uploadDir, plan.filePath);
@@ -160,7 +163,9 @@ export async function planRoutes(app: FastifyInstance) {
   app.get("/project/:projectId", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
     const { projectId } = req.params as { projectId: string };
-    const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
+    const projectIds = await listAccessibleProjectIds(user.id);
+    if (!projectIds.includes(projectId)) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
     if (!project) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
     const plans = await prisma.plan.findMany({
       where: { projectId },

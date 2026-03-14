@@ -4,6 +4,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { authRoutes } from "./routes/auth.js";
+import { organizationRoutes } from "./routes/organizations.js";
+import { membershipRoutes } from "./routes/memberships.js";
 import { projectRoutes } from "./routes/projects.js";
 import { planRoutes } from "./routes/plans.js";
 import { runRoutes } from "./routes/runs.js";
@@ -32,6 +34,8 @@ async function start() {
   app.get("/health", async () => ({ status: "ok", service: "baupilot-api" }));
 
   await app.register(authRoutes, { prefix: "/api/auth" });
+  await app.register(organizationRoutes, { prefix: "/api/organizations" });
+  await app.register(membershipRoutes, { prefix: "/api/memberships" });
   await app.register(projectRoutes, { prefix: "/api/projects" });
   await app.register(planRoutes, { prefix: "/api/plans" });
   await app.register(runRoutes, { prefix: "/api/runs" });

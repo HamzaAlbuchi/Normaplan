@@ -2,6 +2,7 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { prisma } from "../db.js";
 import { requireAuth, isAdmin } from "../auth.js";
+import { canReviewViolations, canAccessProject } from "../rbac.js";
 import { DISMISS_REASON_VALUES, DEFER_REASON_VALUES } from "../constants/reviewReasons.js";
 
 const updateBody = z.object({
@@ -88,12 +89,12 @@ export async function violationRoutes(app: FastifyInstance) {
 
     const violation = await prisma.ruleViolation.findFirst({
       where: { id: violationId },
-      include: { run: { include: { plan: { include: { project: true } } } } },
+      include: { run: { include: { plan: true } } },
     });
     if (!violation) return reply.status(404).send({ code: "NOT_FOUND", message: "Violation not found" });
 
-    const isOwner = violation.run.plan.project.userId === user.id;
-    if (!isOwner && !isAdmin(user.email))
+    const access = await canAccessProject(user.id, violation.run.plan.projectId);
+    if (!access.ok && !isAdmin(user.email))
       return reply.status(403).send({ code: "FORBIDDEN", message: "Access denied" });
 
     const history = await prisma.violationReview.findMany({

@@ -51,11 +51,18 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 }
 
 // Auth
+export interface OrgMembership {
+  id: string;
+  name: string;
+  role: string;
+}
+
 export interface UserProfile {
   id: string;
   email: string;
   name?: string;
   isAdmin?: boolean;
+  organizations?: OrgMembership[];
 }
 
 export const authApi = {
@@ -95,14 +102,24 @@ export interface DashboardStats {
   errorCount: number;
 }
 
+export interface ProjectDetail extends ProjectSummary {
+  organizationName?: string;
+}
+
 export const projectsApi = {
   list: () => api<ProjectSummary[]>("/projects"),
   getStats: () => api<DashboardStats>("/projects/stats"),
-  create: (name: string, zipCode: string) =>
-    api<ProjectSummary>("/projects", { method: "POST", body: { name, zipCode } }),
-  get: (id: string) => api<ProjectSummary>(`/projects/${id}`),
+  create: (name: string, zipCode: string, organizationId?: string) =>
+    api<ProjectSummary>("/projects", { method: "POST", body: { name, zipCode, organizationId } }),
+  get: (id: string) => api<ProjectDetail>(`/projects/${id}`),
   update: (id: string, data: { name?: string; zipCode?: string | null }) =>
     api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
+  listAssignments: (projectId: string) =>
+    api<{ userId: string; email: string; name?: string }[]>(`/projects/${projectId}/assignments`),
+  addAssignment: (projectId: string, userId: string) =>
+    api<void>(`/projects/${projectId}/assignments`, { method: "POST", body: { userId } }),
+  removeAssignment: (projectId: string, userId: string) =>
+    api<void>(`/projects/${projectId}/assignments/${userId}`, { method: "DELETE" }),
 };
 
 // Plans

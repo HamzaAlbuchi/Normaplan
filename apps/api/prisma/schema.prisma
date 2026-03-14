@@ -1,5 +1,6 @@
 // BauPilot – Database schema
 // PostgreSQL
+// Multi-user architecture office workspace
 
 generator client {
   provider = "prisma-client-js"
@@ -10,30 +11,71 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// Roles: owner, manager, architect, reviewer, viewer
 model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  passwordHash   String
+  name           String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  memberships         Membership[]
+  projectAssignments  ProjectAssignment[]
+  violationDecisions  RuleViolation[]     @relation("decidedBy")
+  reviewHistory       ViolationReview[]
+}
+
+model Organization {
   id        String   @id @default(cuid())
-  email     String   @unique
-  passwordHash String
-  name      String?
+  name      String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  projects Project[]
-  violationDecisions RuleViolation[] @relation("decidedBy")
-  reviewHistory ViolationReview[]
+  memberships Membership[]
+  projects    Project[]
+}
+
+model Membership {
+  id             String   @id @default(cuid())
+  userId         String
+  organizationId String
+  role           String   // owner | manager | architect | reviewer | viewer
+  createdAt      DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, organizationId])
+  @@index([organizationId])
+  @@index([userId])
 }
 
 model Project {
-  id        String   @id @default(cuid())
-  name      String
-  zipCode   String   // German PLZ (5 digits); mandatory for state-specific building regulations
-  state     String   // Bundesland code (e.g. BY, NW) derived from zipCode
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  name           String
+  zipCode        String
+  state          String
+  organizationId String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  plans Plan[]
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assignments  ProjectAssignment[]
+  plans        Plan[]
+}
+
+model ProjectAssignment {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  createdAt DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([userId])
 }
 
 model Plan {
@@ -42,10 +84,10 @@ model Plan {
   project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   name            String
   fileName        String
-  filePath        String?  // relative path in uploads dir
-  status          String   @default("uploaded") // uploaded | extracting | ready | failed
+  filePath        String?
+  status          String   @default("uploaded")
   extractionError String?
-  elementsJson    String?  // JSON PlanElements; null until extraction done
+  elementsJson    String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
@@ -53,38 +95,37 @@ model Plan {
 }
 
 model RuleRun {
-  id          String   @id @default(cuid())
-  planId      String
-  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
-  checkedAt   DateTime @default(now())
-  ruleVersion String?
-  violationCount Int    @default(0)
-  warningCount   Int   @default(0)
-  errorCount     Int   @default(0)
+  id             String   @id @default(cuid())
+  planId         String
+  plan           Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  checkedAt      DateTime @default(now())
+  ruleVersion    String?
+  violationCount Int      @default(0)
+  warningCount   Int      @default(0)
+  errorCount     Int      @default(0)
 
   violations RuleViolation[]
 }
 
 model RuleViolation {
-  id             String   @id @default(cuid())
-  runId          String
-  run            RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
-  ruleId         String
-  ruleName       String
-  severity       String   // warning | error | info
-  message        String
-  suggestion     String?
-  elementIds     String[]  // array of element id strings
-  actualValue    Float?
-  requiredValue  Float?
-  regulationRef  String?
-  // Review workflow
-  status         String   @default("open") // open | confirmed | dismissed | deferred | resolved
-  reason         String?  // dismiss/defer reason code
-  comment        String?  // optional free-text
+  id              String   @id @default(cuid())
+  runId           String
+  run             RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ruleId          String
+  ruleName        String
+  severity        String
+  message         String
+  suggestion      String?
+  elementIds      String[]
+  actualValue     Float?
+  requiredValue   Float?
+  regulationRef   String?
+  status          String   @default("open")
+  reason          String?
+  comment         String?
   decidedByUserId String?
-  decidedBy      User?    @relation("decidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
-  decidedAt      DateTime?
+  decidedBy       User?    @relation("decidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedAt       DateTime?
 
   reviewHistory ViolationReview[]
 }

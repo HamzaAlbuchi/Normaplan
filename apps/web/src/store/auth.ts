@@ -3,11 +3,18 @@ import { create } from "zustand";
 const TOKEN_KEY = "baupilot_token";
 const USER_KEY = "baupilot_user";
 
+export interface OrgMembership {
+  id: string;
+  name: string;
+  role: string;
+}
+
 export interface User {
   id: string;
   email: string;
   name?: string;
   isAdmin?: boolean;
+  organizations?: OrgMembership[];
 }
 
 function getStored(): { token: string | null; user: User | null } {
