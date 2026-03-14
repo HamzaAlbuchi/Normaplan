@@ -20,8 +20,9 @@ export default function Layout() {
   return (
     <div className="min-h-screen flex flex-col">
       <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="text-xl font-semibold text-primary-600">
-          BauPilot
+        <Link to="/" className="flex items-center gap-2 text-primary-600 hover:opacity-90">
+          <img src="/logo.png" alt="BauPilot" className="h-8 object-contain" />
+          <span className="text-xl font-semibold">BauPilot</span>
         </Link>
         <div className="flex items-center gap-4">
           <Link to="/profile" className="text-sm text-slate-600 hover:text-primary-600">

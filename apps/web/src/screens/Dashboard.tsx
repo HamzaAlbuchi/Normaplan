@@ -27,11 +27,15 @@ export default function Dashboard() {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <h1 className="text-2xl font-semibold text-slate-800 mb-2">Projekte</h1>
-      <p className="text-slate-600 mb-6">
-        Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften.
-      </p>
-
+      <div className="flex items-center gap-3 mb-6">
+        <img src="/logo.png" alt="BauPilot" className="h-10 object-contain" />
+        <div>
+          <h1 className="text-2xl font-semibold text-slate-800">Projekte</h1>
+          <p className="text-slate-600 text-sm mt-0.5">
+            Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften.
+          </p>
+        </div>
+      </div>
       <form onSubmit={handleCreate} className="flex gap-3 mb-8">
         <input
           type="text"

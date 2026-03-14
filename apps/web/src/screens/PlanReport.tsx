@@ -123,12 +123,15 @@ function ReportWithExport({
   return (
     <div ref={printRef} className="rounded-xl border border-slate-200 bg-white overflow-hidden">
       <div className="px-6 py-4 border-b border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h2 className="font-semibold text-slate-800">Prüfbericht – {plan.name}</h2>
-          <p className="text-sm text-slate-500 mt-1">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" alt="BauPilot" className="h-10 object-contain flex-shrink-0" />
+          <div>
+            <h2 className="font-semibold text-slate-800">Prüfbericht – {plan.name}</h2>
+            <p className="text-sm text-slate-500 mt-1">
             Geprüft am {run.checkedAt ? new Date(run.checkedAt).toLocaleString("de-DE") : "—"} ·{" "}
             {run.violationCount ?? 0} mögliche Verstöße ({run.errorCount ?? 0} Kritisch, {run.warningCount ?? 0} Warnungen, {grouped.info.length} Hinweise)
-          </p>
+            </p>
+          </div>
         </div>
         <button
           type="button"

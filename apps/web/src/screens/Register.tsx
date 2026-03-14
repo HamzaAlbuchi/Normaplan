@@ -41,7 +41,7 @@ export default function Register() {
     <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-primary-700">BauPilot</h1>
+          <img src="/logo.png" alt="BauPilot" className="h-14 mx-auto mb-4 object-contain" />
           <p className="text-slate-500 mt-1">Konto erstellen</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
