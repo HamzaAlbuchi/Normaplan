@@ -9,7 +9,12 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/types/package.json ./packages/types/
 COPY packages/rule-engine/package.json ./packages/rule-engine/
 
-# Use npm (same workspace:* protocol). Single node_modules tree, no pnpm store.
+# npm does not support workspace:*, replace with file: paths
+RUN sed -i 's|"@baupilot/types": "workspace:\*"|"@baupilot/types": "file:../../packages/types"|g' apps/api/package.json && \
+    sed -i 's|"@baupilot/rule-engine": "workspace:\*"|"@baupilot/rule-engine": "file:../../packages/rule-engine"|g' apps/api/package.json && \
+    sed -i 's|"@baupilot/types": "workspace:\*"|"@baupilot/types": "file:../types"|g' packages/rule-engine/package.json
+
+# Use npm. Single node_modules tree, no pnpm store, Prisma works as-is.
 RUN npm install --ignore-scripts
 
 # Copy source
