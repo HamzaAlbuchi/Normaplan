@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "AI-powered architecture assistant for German building rule checking",
+  "workspaces": ["apps/*", "packages/*"],
   "scripts": {
     "build:packages": "pnpm --filter @baupilot/types build && pnpm --filter @baupilot/rule-engine build",
     "dev": "pnpm run build:packages && pnpm run --parallel dev",

@@ -1,7 +1,6 @@
-# BauPilot API – build from monorepo root so workspace packages are available
+# BauPilot API – use npm in Docker so node_modules layout is simple and Prisma works without hacks
 FROM node:20-slim
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
 WORKDIR /app
 
 # Copy workspace and package files
@@ -10,32 +9,21 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/types/package.json ./packages/types/
 COPY packages/rule-engine/package.json ./packages/rule-engine/
 
-# Install dependencies
-RUN pnpm install
+# Use npm (same workspace:* protocol). Single node_modules tree, no pnpm store.
+RUN npm install --ignore-scripts
 
 # Copy source
 COPY packages/types ./packages/types
 COPY packages/rule-engine ./packages/rule-engine
 COPY apps/api ./apps/api
 
-# Build packages, generate Prisma client (schema path for monorepo), build API
-RUN pnpm --filter @baupilot/types build && \
-    pnpm --filter @baupilot/rule-engine build && \
-    pnpm --filter api exec prisma generate --schema=prisma/schema.prisma && \
-    pnpm --filter api build
-
-# pnpm: copy generated Prisma client into every pnpm store node_modules that has @prisma/client (runtime resolves from there)
-RUN SRC="/app/apps/api/node_modules/.prisma/client" && \
-    test -f "$$SRC/default.js" || (echo "Prisma generate did not create $$SRC" && exit 1) && \
-    find /app/node_modules/.pnpm -maxdepth 3 -type d -name 'node_modules' 2>/dev/null | while read NM; do \
-      [ -d "$$NM/@prisma/client" ] || continue; \
-      mkdir -p "$$NM/.prisma" && cp -r "$$SRC" "$$NM/.prisma/client"; \
-    done && \
-    test -f "$$SRC/default.js" && echo "Prisma client ready"
+# Build packages, generate Prisma client, build API (no copy step needed with npm)
+RUN npm run build --workspace=@baupilot/types && \
+    npm run build --workspace=@baupilot/rule-engine && \
+    (cd apps/api && npx prisma generate --schema=prisma/schema.prisma && npx tsc)
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
 WORKDIR /app/apps/api
-# Run migrations then start (so Railway never needs manual migrate commands)
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/index.js"]
