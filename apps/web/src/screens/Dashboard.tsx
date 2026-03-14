@@ -50,16 +50,14 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {stats && (
-        <div className="mb-8">
-          <StatusCard
-            runCount={stats.runCount}
-            warningCount={stats.warningCount}
-            errorCount={stats.errorCount}
-            title="Ihre Prüfergebnisse"
-          />
-        </div>
-      )}
+      <div className="mb-8">
+        <StatusCard
+          runCount={stats?.runCount ?? 0}
+          warningCount={stats?.warningCount ?? 0}
+          errorCount={stats?.errorCount ?? 0}
+          title="Ihre Prüfergebnisse"
+        />
+      </div>
 
       <form onSubmit={handleCreate} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
