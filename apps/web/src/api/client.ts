@@ -86,14 +86,59 @@ export const authApi = {
     }),
 };
 
+// Organizations
+export interface OrgSummary {
+  id: string;
+  name: string;
+  role: string;
+  projectCount: number;
+  memberCount: number;
+}
+
+export const organizationsApi = {
+  list: () => api<OrgSummary[]>("/organizations"),
+  create: (name: string) =>
+    api<OrgSummary>("/organizations", { method: "POST", body: { name } }),
+  get: (id: string) => api<OrgSummary>(`/organizations/${id}`),
+};
+
+// Memberships
+export interface MemberSummary {
+  id: string;
+  userId: string;
+  email: string;
+  name?: string;
+  role: string;
+  createdAt: string;
+}
+
+export const membershipsApi = {
+  listByOrg: (orgId: string) =>
+    api<MemberSummary[]>(`/memberships/org/${orgId}`),
+  invite: (orgId: string, email: string, role: string) =>
+    api<MemberSummary>("/memberships/org/" + orgId + "/invite", {
+      method: "POST",
+      body: { email, role },
+    }),
+  updateRole: (membershipId: string, role: string) =>
+    api<MemberSummary>(`/memberships/${membershipId}`, {
+      method: "PATCH",
+      body: { role },
+    }),
+  remove: (membershipId: string) =>
+    api<void>(`/memberships/${membershipId}`, { method: "DELETE" }),
+};
+
 // Projects
 export interface ProjectSummary {
   id: string;
   name: string;
   zipCode?: string;
   state?: string;
+  organizationId?: string;
   createdAt: string;
   planCount: number;
+  architects?: { id: string; email: string; name?: string }[];
 }
 
 export interface DashboardStats {
