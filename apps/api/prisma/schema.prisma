@@ -1,0 +1,77 @@
+// BauPilot – Database schema
+// PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  passwordHash String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  projects Project[]
+}
+
+model Project {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  plans Plan[]
+}
+
+model Plan {
+  id              String   @id @default(cuid())
+  projectId       String
+  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name            String
+  fileName        String
+  filePath        String?  // relative path in uploads dir
+  status          String   @default("uploaded") // uploaded | extracting | ready | failed
+  extractionError String?
+  elementsJson    String?  // JSON PlanElements; null until extraction done
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  runs RuleRun[]
+}
+
+model RuleRun {
+  id          String   @id @default(cuid())
+  planId      String
+  plan        Plan     @relation(fields: [planId], references: [id], onDelete: Cascade)
+  checkedAt   DateTime @default(now())
+  ruleVersion String?
+  violationCount Int    @default(0)
+  warningCount   Int   @default(0)
+  errorCount     Int   @default(0)
+
+  violations RuleViolation[]
+}
+
+model RuleViolation {
+  id           String   @id @default(cuid())
+  runId        String
+  run          RuleRun  @relation(fields: [runId], references: [id], onDelete: Cascade)
+  ruleId       String
+  ruleName     String
+  severity     String   // warning | error | info
+  message      String
+  suggestion   String?
+  elementIds   String[]  // array of element id strings
+  actualValue  Float?
+  requiredValue Float?
+  regulationRef String?
+}

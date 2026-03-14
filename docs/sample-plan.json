@@ -1,0 +1,23 @@
+{
+  "rooms": [
+    { "id": "room-1", "name": "Wohnzimmer", "areaM2": 28, "windowAreaM2": 2.1 },
+    { "id": "room-2", "name": "Schlafzimmer", "areaM2": 18, "windowAreaM2": 1.2 },
+    { "id": "room-3", "name": "Küche", "areaM2": 12, "windowAreaM2": 1.5 }
+  ],
+  "corridors": [
+    { "id": "corridor-1", "widthM": 1.0, "lengthM": 8 },
+    { "id": "corridor-2", "widthM": 1.35, "lengthM": 4 }
+  ],
+  "doors": [
+    { "id": "door-1", "widthM": 0.85, "accessible": true },
+    { "id": "door-2", "widthM": 0.92, "accessible": true },
+    { "id": "door-3", "widthM": 0.78 }
+  ],
+  "windows": [],
+  "stairs": [
+    { "id": "stair-1", "treadDepthM": 0.24, "riserHeightM": 0.21, "widthM": 0.95 }
+  ],
+  "escapeRoutes": [
+    { "id": "route-1", "lengthM": 42, "fromRoomId": "room-1", "toExitId": "exit-1" }
+  ]
+}

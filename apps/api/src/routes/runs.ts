@@ -1,0 +1,122 @@
+import { FastifyInstance } from "fastify";
+import { prisma } from "../db.js";
+import { requireAuth } from "../auth.js";
+import { nanoid } from "nanoid";
+import { runRules } from "@baupilot/rule-engine";
+import type { PlanElements } from "@baupilot/types";
+
+export async function runRoutes(app: FastifyInstance) {
+  app.addHook("onRequest", async (req, reply) => {
+    try {
+      (req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> }).user = await requireAuth(
+        req.headers.authorization
+      );
+    } catch {
+      return reply.status(401).send({ code: "UNAUTHORIZED", message: "Invalid or missing token" });
+    }
+  });
+
+  app.post("/", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const body = req.body as { planId: string };
+    if (!body?.planId) return reply.status(400).send({ code: "MISSING_PLAN_ID", message: "planId required" });
+
+    const plan = await prisma.plan.findFirst({
+      where: { id: body.planId },
+      include: { project: true },
+    });
+    if (!plan || plan.project.userId !== user.id)
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
+    if (!plan.elementsJson)
+      return reply.status(400).send({ code: "PLAN_NOT_READY", message: "Plan extraction not ready. Upload a JSON plan." });
+
+    const elements = JSON.parse(plan.elementsJson) as PlanElements;
+    const runId = nanoid();
+    const { violations, ruleVersion } = runRules(elements, { runId, planId: plan.id });
+
+    const warningCount = violations.filter((v) => v.severity === "warning").length;
+    const errorCount = violations.filter((v) => v.severity === "error").length;
+
+    const run = await prisma.ruleRun.create({
+      data: {
+        id: runId,
+        planId: plan.id,
+        ruleVersion,
+        violationCount: violations.length,
+        warningCount,
+        errorCount,
+      },
+    });
+
+    await prisma.ruleViolation.createMany({
+      data: violations.map((v) => ({
+        runId: run.id,
+        ruleId: v.ruleId,
+        ruleName: v.ruleName,
+        severity: v.severity,
+        message: v.message,
+        suggestion: v.suggestion ?? null,
+        elementIds: v.elementIds,
+        actualValue: v.actualValue ?? null,
+        requiredValue: v.requiredValue ?? null,
+        regulationRef: v.regulationRef ?? null,
+      })),
+    });
+
+    const withViolations = await prisma.ruleRun.findUnique({
+      where: { id: run.id },
+      include: { violations: true },
+    });
+
+    return reply.status(201).send({
+      id: withViolations!.id,
+      planId: withViolations!.planId,
+      checkedAt: withViolations!.checkedAt.toISOString(),
+      violationCount: withViolations!.violationCount,
+      warningCount: withViolations!.warningCount,
+      errorCount: withViolations!.errorCount,
+      violations: withViolations!.violations.map((v) => ({
+        ruleId: v.ruleId,
+        ruleName: v.ruleName,
+        severity: v.severity,
+        message: v.message,
+        suggestion: v.suggestion,
+        elementIds: v.elementIds,
+        actualValue: v.actualValue,
+        requiredValue: v.requiredValue,
+        regulationRef: v.regulationRef,
+      })),
+    });
+  });
+
+  app.get("/:runId", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { runId } = req.params as { runId: string };
+    const run = await prisma.ruleRun.findFirst({
+      where: { id: runId },
+      include: { plan: { include: { project: true } }, violations: true },
+    });
+    if (!run || run.plan.project.userId !== user.id)
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Run not found" });
+
+    return {
+      id: run.id,
+      planId: run.planId,
+      checkedAt: run.checkedAt.toISOString(),
+      violationCount: run.violationCount,
+      warningCount: run.warningCount,
+      errorCount: run.errorCount,
+      violations: run.violations.map((v) => ({
+        ruleId: v.ruleId,
+        ruleName: v.ruleName,
+        severity: v.severity,
+        message: v.message,
+        suggestion: v.suggestion,
+        elementIds: v.elementIds,
+        actualValue: v.actualValue,
+        requiredValue: v.requiredValue,
+        regulationRef: v.regulationRef,
+      })),
+    };
+  });
+}
