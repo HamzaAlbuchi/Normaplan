@@ -22,7 +22,10 @@ async function start() {
   await app.register(cors, {
     origin: corsOrigin ? corsOrigin.split(",").map((o: string) => o.trim()) : true,
   });
-  await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } }); // 50 MB
+  await app.register(multipart, {
+    limits: { fileSize: 50 * 1024 * 1024 },
+    attachFieldsToBody: "keyValues",
+  });
 
   app.get("/health", async () => ({ status: "ok", service: "baupilot-api" }));
 

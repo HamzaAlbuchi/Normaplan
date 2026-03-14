@@ -25,25 +25,25 @@ export async function planRoutes(app: FastifyInstance) {
 
   app.post("/upload", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
-    const data = await req.file();
-    if (!data) return reply.status(400).send({ code: "MISSING_FILE", message: "No file uploaded" });
+    const body = (await req.body()) as Record<string, unknown>;
+    const projectId = typeof body?.projectId === "string" ? body.projectId : undefined;
+    const name = typeof body?.name === "string" ? body.name : undefined;
+    const fileField = body?.file as { toBuffer?: () => Promise<Buffer>; _buf?: Buffer; filename?: string } | undefined;
 
-    const projectIdField = data.fields?.projectId;
-    const projectId =
-      typeof projectIdField === "string"
-        ? projectIdField
-        : (projectIdField as { value?: string } | undefined)?.value;
-    const nameField = data.fields?.name;
-    const name =
-      (typeof nameField === "string" ? nameField : (nameField as { value?: string } | undefined)?.value) ||
-      data.filename;
+    let buf: Buffer | undefined;
+    let filename = "";
+    if (fileField) {
+      buf = fileField._buf ?? (typeof fileField.toBuffer === "function" ? await fileField.toBuffer() : undefined);
+      filename = fileField.filename ?? "";
+    }
+
+    if (!buf || !filename) return reply.status(400).send({ code: "MISSING_FILE", message: "No file uploaded" });
     if (!projectId) return reply.status(400).send({ code: "MISSING_PROJECT_ID", message: "projectId required" });
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
     if (!project) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
 
-    const ext = path.extname(data.filename).toLowerCase();
-    const buf = await data.toBuffer();
+    const ext = path.extname(filename).toLowerCase();
 
     let elementsJson: string | null = null;
     let status = "ready" as "uploaded" | "extracting" | "ready" | "failed";
@@ -90,8 +90,8 @@ export async function planRoutes(app: FastifyInstance) {
     const plan = await prisma.plan.create({
       data: {
         projectId,
-        name: name || data.filename,
-        fileName: data.filename,
+        name: name || filename,
+        fileName: filename,
         filePath,
         status,
         extractionError,
