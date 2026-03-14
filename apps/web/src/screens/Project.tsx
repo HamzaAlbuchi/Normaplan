@@ -82,12 +82,6 @@ export default function Project() {
   const { projectId } = useParams<{ projectId: string }>();
   const user = useAuthStore((s) => s.user);
   const [uploading, setUploading] = useState(false);
-  const canEdit = project?.organizationId && user?.organizations?.some(
-    (o) => o.id === project.organizationId && !["viewer"].includes(o.role)
-  );
-  const canWork = project?.organizationId && user?.organizations?.some(
-    (o) => o.id === project.organizationId && ["owner", "manager", "architect", "reviewer"].includes(o.role)
-  );
   const [uploadError, setUploadError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
@@ -97,6 +91,13 @@ export default function Project() {
     queryFn: () => projectsApi.get(projectId!),
     enabled: !!projectId,
   });
+
+  const canEdit = project?.organizationId && user?.organizations?.some(
+    (o) => o.id === project.organizationId && !["viewer"].includes(o.role)
+  );
+  const canWork = project?.organizationId && user?.organizations?.some(
+    (o) => o.id === project.organizationId && ["owner", "manager", "architect", "reviewer"].includes(o.role)
+  );
 
   const { data: plans = [], isLoading } = useQuery({
     queryKey: ["plans", projectId],
