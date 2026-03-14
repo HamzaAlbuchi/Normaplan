@@ -18,10 +18,10 @@ COPY packages/types ./packages/types
 COPY packages/rule-engine ./packages/rule-engine
 COPY apps/api ./apps/api
 
-# Build packages, generate Prisma client, build API
+# Build packages, generate Prisma client (schema path for monorepo), build API
 RUN pnpm --filter @baupilot/types build && \
     pnpm --filter @baupilot/rule-engine build && \
-    pnpm --filter api exec prisma generate && \
+    pnpm --filter api exec prisma generate --schema=prisma/schema.prisma && \
     pnpm --filter api build
 
 # pnpm: copy generated client into the store path the runtime loads from (find by default.js location)
@@ -36,4 +36,4 @@ EXPOSE 3001
 
 WORKDIR /app/apps/api
 # Run migrations then start (so Railway never needs manual migrate commands)
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/index.js"]

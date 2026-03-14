@@ -10,9 +10,9 @@
     "start:prod": "prisma migrate deploy && node dist/index.js",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "db:generate": "prisma generate",
-    "db:migrate": "prisma migrate dev",
-    "db:studio": "prisma studio"
+    "db:generate": "prisma generate --schema=prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema=prisma/schema.prisma",
+    "db:studio": "prisma studio --schema=prisma/schema.prisma"
   },
   "dependencies": {
     "@fastify/cors": "^10.0.1",
