@@ -3,6 +3,8 @@ import { SignJWT, jwtVerify } from "jose";
 import { prisma } from "./db.js";
 import { config } from "./config.js";
 
+const { getAdminEmails } = config;
+
 const secret = new TextEncoder().encode(config.jwtSecret);
 
 export async function hashPassword(password: string): Promise<string> {
@@ -40,5 +42,15 @@ export async function requireAuth(authHeader: string | undefined) {
   if (!payload) throw new Error("Unauthorized");
   const user = await prisma.user.findUnique({ where: { id: payload.userId } });
   if (!user) throw new Error("Unauthorized");
+  return user;
+}
+
+export function isAdmin(email: string): boolean {
+  return getAdminEmails().includes(email.toLowerCase());
+}
+
+export async function requireAdmin(authHeader: string | undefined) {
+  const user = await requireAuth(authHeader);
+  if (!isAdmin(user.email)) throw new Error("Forbidden");
   return user;
 }

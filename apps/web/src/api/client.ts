@@ -55,6 +55,7 @@ export interface UserProfile {
   id: string;
   email: string;
   name?: string;
+  isAdmin?: boolean;
 }
 
 export const authApi = {
@@ -156,5 +157,46 @@ export const runsApi = {
   create: (planId: string) =>
     api<RunDetail>("/runs", { method: "POST", body: { planId } }),
   get: (runId: string) => api<RunDetail>(`/runs/${runId}`),
+};
+
+// Admin
+export interface AdminStats {
+  userCount: number;
+  projectCount: number;
+  runCount: number;
+  violationCount: number;
+}
+
+export interface AdminUserProject {
+  id: string;
+  name: string;
+  state: string;
+  planCount: number;
+  runs: {
+    id: string;
+    planId: string;
+    planName: string;
+    checkedAt: string;
+    violationCount: number;
+    warningCount: number;
+    errorCount: number;
+  }[];
+}
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  name?: string;
+  createdAt: string;
+  projectCount: number;
+  planCount: number;
+  runCount: number;
+  violationCount: number;
+  projects: AdminUserProject[];
+}
+
+export const adminApi = {
+  getStats: () => api<AdminStats>("/admin/stats"),
+  getUsers: () => api<AdminUser[]>("/admin/users"),
 };
 

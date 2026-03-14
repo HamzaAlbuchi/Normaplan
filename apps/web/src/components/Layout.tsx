@@ -2,13 +2,21 @@ import { Outlet, Link } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import { useEffect } from "react";
 import UserMenu from "./UserMenu";
+import { authApi } from "../api/client";
 
 export default function Layout() {
-  const { token, loadFromStorage } = useAuthStore();
+  const { token, loadFromStorage, setUser } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
 
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
+
+  useEffect(() => {
+    if (token) {
+      authApi.getMe().then((u) => setUser(u)).catch(() => {});
+    }
+  }, [token, setUser]);
 
   if (!token) return null;
 
@@ -31,6 +39,14 @@ export default function Layout() {
               >
                 Projekte
               </Link>
+              {user?.isAdmin && (
+                <Link
+                  to="/admin"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-colors"
+                >
+                  Admin
+                </Link>
+              )}
             </nav>
           </div>
           <div className="flex items-center gap-4">

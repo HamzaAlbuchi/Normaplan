@@ -7,6 +7,7 @@ export interface User {
   id: string;
   email: string;
   name?: string;
+  isAdmin?: boolean;
 }
 
 function getStored(): { token: string | null; user: User | null } {
