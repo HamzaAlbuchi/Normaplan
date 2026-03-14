@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, type ProjectSummary } from "../api/client";
+import StatusCard from "../components/StatusCard";
 
 const STATE_NAMES: Record<string, string> = {
   BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
@@ -17,6 +18,10 @@ export default function Dashboard() {
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
     queryFn: () => projectsApi.list(),
+  });
+  const { data: stats } = useQuery({
+    queryKey: ["projects", "stats"],
+    queryFn: () => projectsApi.getStats(),
   });
 
   const createMutation = useMutation({
@@ -44,6 +49,17 @@ export default function Dashboard() {
           Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften.
         </p>
       </div>
+
+      {stats && (
+        <div className="mb-8">
+          <StatusCard
+            runCount={stats.runCount}
+            warningCount={stats.warningCount}
+            errorCount={stats.errorCount}
+            title="Ihre Prüfergebnisse"
+          />
+        </div>
+      )}
 
       <form onSubmit={handleCreate} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end">
         <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">

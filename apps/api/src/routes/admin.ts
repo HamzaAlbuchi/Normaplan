@@ -14,17 +14,22 @@ export async function adminRoutes(app: FastifyInstance) {
   });
 
   app.get("/stats", async () => {
-    const [userCount, projectCount, runCount, violationCount] = await Promise.all([
+    const [userCount, projectCount, runs] = await Promise.all([
       prisma.user.count(),
       prisma.project.count(),
-      prisma.ruleRun.count(),
-      prisma.ruleViolation.count(),
+      prisma.ruleRun.findMany({ select: { warningCount: true, errorCount: true } }),
     ]);
+    const runCount = runs.length;
+    const warningCount = runs.reduce((s, r) => s + r.warningCount, 0);
+    const errorCount = runs.reduce((s, r) => s + r.errorCount, 0);
+    const violationCount = warningCount + errorCount;
     return {
       userCount,
       projectCount,
       runCount,
       violationCount,
+      warningCount,
+      errorCount,
     };
   });
 

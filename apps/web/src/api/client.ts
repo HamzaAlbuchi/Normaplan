@@ -89,8 +89,15 @@ export interface ProjectSummary {
   planCount: number;
 }
 
+export interface DashboardStats {
+  runCount: number;
+  warningCount: number;
+  errorCount: number;
+}
+
 export const projectsApi = {
   list: () => api<ProjectSummary[]>("/projects"),
+  getStats: () => api<DashboardStats>("/projects/stats"),
   create: (name: string, zipCode: string) =>
     api<ProjectSummary>("/projects", { method: "POST", body: { name, zipCode } }),
   get: (id: string) => api<ProjectSummary>(`/projects/${id}`),
@@ -165,6 +172,8 @@ export interface AdminStats {
   projectCount: number;
   runCount: number;
   violationCount: number;
+  warningCount: number;
+  errorCount: number;
 }
 
 export interface AdminUserProject {

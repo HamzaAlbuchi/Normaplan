@@ -188,6 +188,7 @@ export default function PlanReport() {
     mutationFn: () => runsApi.create(planId!),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["plan", planId] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
       queryClient.setQueryData(["run", data.id], data);
     },
   });

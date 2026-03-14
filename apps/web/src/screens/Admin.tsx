@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "../api/client";
+import StatusCard from "../components/StatusCard";
 
 export default function Admin() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -23,24 +24,34 @@ export default function Admin() {
       {statsLoading ? (
         <p className="text-sm text-slate-500">Statistiken werden geladen…</p>
       ) : stats ? (
-        <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Nutzer</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.userCount}</p>
+        <>
+          <div className="mb-6">
+            <StatusCard
+              runCount={stats.runCount}
+              warningCount={stats.warningCount}
+              errorCount={stats.errorCount}
+              title="Gesamtstatus"
+            />
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Projekte</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.projectCount}</p>
+          <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">Nutzer</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.userCount}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">Projekte</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.projectCount}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">Prüfläufe</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.runCount}</p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-sm font-medium text-slate-500">Verstöße gesamt</p>
+              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.violationCount}</p>
+            </div>
           </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Prüfläufe</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.runCount}</p>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <p className="text-sm font-medium text-slate-500">Verstöße gesamt</p>
-            <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.violationCount}</p>
-          </div>
-        </div>
+        </>
       ) : null}
 
       <h2 className="text-lg font-semibold text-slate-900 mb-4">Nutzer & Projekte</h2>

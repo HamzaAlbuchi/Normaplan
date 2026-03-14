@@ -24,6 +24,18 @@ export async function projectRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get("/stats", async (req) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const runs = await prisma.ruleRun.findMany({
+      where: { plan: { project: { userId: user.id } } },
+      select: { warningCount: true, errorCount: true },
+    });
+    const runCount = runs.length;
+    const warningCount = runs.reduce((s, r) => s + r.warningCount, 0);
+    const errorCount = runs.reduce((s, r) => s + r.errorCount, 0);
+    return { runCount, warningCount, errorCount };
+  });
+
   app.get("/", async (req) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
     const projects = await prisma.project.findMany({
