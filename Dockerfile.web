@@ -1,0 +1,37 @@
+# BauPilot Web – production build served on 0.0.0.0:PORT
+FROM node:20-slim AS builder
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+COPY package.json pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
+COPY packages/types/package.json ./packages/types/
+COPY packages/rule-engine/package.json ./packages/rule-engine/
+
+RUN pnpm install
+
+COPY packages/types ./packages/types
+COPY packages/rule-engine ./packages/rule-engine
+COPY apps/web ./apps/web
+
+# Build: packages then web (VITE_API_URL can be set at build time via ARG)
+ARG VITE_API_URL
+ENV VITE_API_URL=${VITE_API_URL}
+RUN pnpm --filter @baupilot/types build && \
+    pnpm --filter @baupilot/rule-engine build && \
+    pnpm --filter web build
+
+# Production: only serve static files
+FROM node:20-slim AS runner
+WORKDIR /app
+
+COPY --from=builder /app/apps/web/dist ./dist
+COPY --from=builder /app/apps/web/scripts ./scripts
+COPY --from=builder /app/apps/web/package.json ./package.json
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+# Listen on 0.0.0.0 so Railway can route traffic
+CMD ["node", "scripts/serve.mjs"]

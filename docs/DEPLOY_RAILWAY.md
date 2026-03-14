@@ -56,33 +56,42 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 
 The frontend must be built with the API URL and then served. You have two options.
 
-### Option A: Second service in the same Railway project (recommended)
+### Option A: Web service with Dockerfile (recommended – avoids 502)
 
 1. In the **same** Railway project, click **New** → **GitHub Repo** again and select the **same** repo.
-2. A second service is created. Configure it as the **Web** app:
+2. Configure the new service as the **Web** app:
 
 **Settings:**
 
-3. **Root Directory**: leave empty (repo root).
-4. **Build Command**:
+3. **Root Directory**: leave empty.
+4. **Dockerfile Path**: `Dockerfile.web`
+5. **Build Command** / **Start Command**: leave empty (Dockerfile handles both).
+6. **Variables**:
+   - `VITE_API_URL` = `https://YOUR-API-DOMAIN.up.railway.app/api` (required at build time; set it before the first deploy).
+
+7. **Networking**: Generate a domain for this service.
+
+The Dockerfile builds the production bundle and runs a small Node server that serves `dist/` on **0.0.0.0:PORT**, so Railway can route traffic correctly.
+
+---
+
+### Option A2: Web service without Dockerfile (Nixpacks)
+
+If you prefer not to use the Dockerfile:
+
+1. **Root Directory**: leave empty.
+2. **Build Command** (exact):
    ```bash
    pnpm install && pnpm run build:packages && pnpm --filter web build
    ```
-5. **Start Command**:
+3. **Start Command** (exact – do not use `dev` or `vite`):
    ```bash
    pnpm --filter web start
    ```
-6. **Variables** (important):
-   - `VITE_API_URL` = your API’s public URL from Step 2 (e.g. `https://your-api-name.up.railway.app/api`)
+4. **Variables**: `VITE_API_URL` = `https://YOUR-API-DOMAIN.up.railway.app/api`
+5. **Networking**: Generate a domain.
 
-   Use **exactly** the API base URL including `/api` if your API is mounted at `/api`, or the root of the API (e.g. `https://your-api-name.up.railway.app`) if the API serves routes at root. Our API uses `/api` prefix, so use:
-   - `VITE_API_URL` = `https://YOUR-API-DOMAIN.up.railway.app/api`
-
-7. **Networking**: Generate a domain for this service so you get a URL like `https://your-web-name.up.railway.app`.
-
-8. Redeploy after setting `VITE_API_URL` so the build picks it up.
-
-**Important:** Use **Build Command** to produce the production bundle (`pnpm --filter web build`), and **Start Command** `pnpm --filter web start` to serve it. Do **not** run `vite` or `pnpm run dev` in production—that runs the dev server on 5173 and is not exposed. The start script serves the built `dist/` on **0.0.0.0:PORT** so Railway can route traffic to it.
+If you get 502, switch to **Option A** (Dockerfile.web) so the app always serves the built files on 0.0.0.0:PORT.
 
 ### Option B: Frontend on Vercel / Netlify
 
