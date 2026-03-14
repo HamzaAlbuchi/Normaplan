@@ -28,7 +28,7 @@ export default function Dashboard() {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center gap-3 mb-6">
-        <img src="/logo.png" alt="BauPilot" className="h-10 object-contain" />
+        <img src="/logo.png" alt="BauPilot" className="h-16 object-contain" />
         <div>
           <h1 className="text-2xl font-semibold text-slate-800">Projekte</h1>
           <p className="text-slate-600 text-sm mt-0.5">
