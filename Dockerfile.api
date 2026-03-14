@@ -24,6 +24,11 @@ RUN pnpm --filter @baupilot/types build && \
     pnpm --filter api exec prisma generate && \
     pnpm --filter api build
 
+# pnpm hoists @prisma/client; the app loads it from the store, but generate wrote to apps/api/node_modules.
+# Copy generated client next to the @prisma/client package in the store (symlink target).
+RUN DEST=$(node -e "const fs=require('fs');const p=require('path');const l='/app/apps/api/node_modules/@prisma/client';const t=p.resolve(p.dirname(l),fs.readlinkSync(l));console.log(p.dirname(t));") && \
+    cp -r /app/apps/api/node_modules/.prisma "$DEST/"
+
 ENV NODE_ENV=production
 EXPOSE 3001
 

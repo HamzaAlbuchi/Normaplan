@@ -122,11 +122,37 @@ For multiple origins use a comma-separated list. If you see CORS errors, double-
 ## Checklist
 
 - [ ] PostgreSQL added and `DATABASE_URL` copied.
-- [ ] API service: repo connected, build = `pnpm install && pnpm run build:packages && pnpm --filter api build`, start = `pnpm --filter api start`, variables `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`.
-- [ ] Migrations run once: `railway run pnpm --filter api exec prisma migrate deploy` (or one-off in Railway).
+- [ ] API service: Dockerfile path `Dockerfile.api`, variables `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`.
+- [ ] **Migrations run once** (required or the API will crash on first DB access): see “Run migrations once” in Step 2.
 - [ ] API domain generated and URL noted.
-- [ ] Web service: same repo, build = `pnpm install && pnpm run build:packages && pnpm --filter web build`, start = `pnpm --filter web start`, variable `VITE_API_URL` = `https://YOUR-API-URL/api`.
+- [ ] Web service: same repo, build/start as in Step 3, variable `VITE_API_URL` = `https://YOUR-API-URL/api`.
 - [ ] Web domain generated. Open the web URL, register, create a project, upload `docs/sample-plan.json`, run a check.
+
+---
+
+## Deployment crashed after successful build
+
+If the API build succeeds but the service then **crashes** or restarts:
+
+1. **Check the logs**  
+   In Railway: open the API service → **Deployments** → click the latest deployment → open **View Logs** (or the **Logs** tab). The app now logs clear errors on startup.
+
+2. **Most common causes**
+
+   - **`DATABASE_URL` not set or wrong**  
+     The API exits with `FATAL: DATABASE_URL environment variable is not set` or fails to connect. Fix: In the API service → **Variables**, set `DATABASE_URL` to the Postgres connection string (from the Postgres service → Variables or Connect). Use the **reference** (e.g. `${{Postgres.DATABASE_URL}}`) if available so it stays in sync.
+
+   - **Migrations not run**  
+     You see a Prisma error like “relation does not exist” or “table … does not exist”. Fix: Run migrations once against the Railway database:
+     ```bash
+     railway run pnpm --filter api exec prisma migrate deploy
+     ```
+     (Install [Railway CLI](https://docs.railway.app/develop/cli) and run from your repo, or use a one-off command in Railway if it supports it.)
+
+   - **Database not reachable**  
+     Railway Postgres is only reachable from within Railway. Ensure `DATABASE_URL` is the one Railway provides for the Postgres service in the same project (not a local or other external URL).
+
+3. **Redeploy** after changing variables or running migrations.
 
 ---
 
