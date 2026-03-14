@@ -31,11 +31,12 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 2. Select your **normaplan** (or **baupilot**) repo.
 3. Railway will add a new service from that repo. We’ll configure it as the API.
 
-**Configure the API service – use the Dockerfile (recommended):**
+**Configure the API service – use the Dockerfile (required to avoid Railpack/Nixpacks):**
 
 4. Open the new service → **Settings**.
 5. Under **Build**, set **Dockerfile Path** to: `Dockerfile.api`  
-   (and leave **Root Directory** empty so the repo root is used).
+   (and leave **Root Directory** empty so the repo root is used).  
+   **If you don’t see “Dockerfile Path”:** go to **Variables** and add `RAILWAY_DOCKERFILE_PATH` = `Dockerfile.api`. That forces Railway to use the Dockerfile instead of Railpack/Nixpacks.
 6. Railway will then **build from the Dockerfile** (no separate Build/Start commands needed). The Dockerfile installs deps, builds `@baupilot/types` and `@baupilot/rule-engine`, then the API, and runs `node dist/index.js`.
 7. **Variables** – add (use the Postgres service’s values):
    - `DATABASE_URL` = (paste the full URL from the Postgres service, e.g. `postgresql://user:pass@host:port/railway`)

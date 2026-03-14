@@ -24,12 +24,12 @@ RUN pnpm --filter @baupilot/types build && \
     pnpm --filter api exec prisma generate --schema=prisma/schema.prisma && \
     pnpm --filter api build
 
-# pnpm: copy generated client into the store path the runtime loads from (find by default.js location)
-RUN PRISMA_STORE="$$(find /app/node_modules/.pnpm -maxdepth 1 -type d -name '@prisma+client*' 2>/dev/null | head -1)/node_modules" && \
-    SRC_DIR="$$(find /app/node_modules /app/apps/api -name 'default.js' -path '*/.prisma/client/default.js' 2>/dev/null | head -1 | xargs dirname)" && \
-    if [ -z "$$SRC_DIR" ]; then SRC_DIR=/app/apps/api/node_modules/.prisma/client; fi && \
-    mkdir -p "$$PRISMA_STORE/.prisma" && cp -r "$$SRC_DIR" "$$PRISMA_STORE/.prisma/client" && \
-    test -f "$$PRISMA_STORE/.prisma/client/default.js" || (echo "Prisma client copy failed"; exit 1)
+# pnpm: copy generated Prisma client into the store path the runtime resolves @prisma/client from
+RUN SRC="/app/apps/api/node_modules/.prisma/client" && \
+    DEST="$$(find /app/node_modules/.pnpm -maxdepth 2 -type d -name 'node_modules' 2>/dev/null | while read d; do [ -d "$$d/@prisma/client" ] && echo "$$d" && break; done)" && \
+    if [ -z "$$DEST" ]; then echo "Prisma copy failed: could not find @prisma/client in pnpm store" && exit 1; fi && \
+    mkdir -p "$$DEST/.prisma" && cp -r "$$SRC" "$$DEST/.prisma/client" && \
+    test -f "$$DEST/.prisma/client/default.js" || (echo "Prisma client copy failed"; exit 1)
 
 ENV NODE_ENV=production
 EXPOSE 3001
