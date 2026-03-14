@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, organizationsApi, authApi, useAuthStore, type ProjectSummary } from "../api/client";
+import { projectsApi, organizationsApi, authApi, type ProjectSummary } from "../api/client";
+import { useAuthStore } from "../store/auth";
 import StatusCard from "../components/StatusCard";
 
 const STATE_NAMES: Record<string, string> = {

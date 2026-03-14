@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { organizationsApi, membershipsApi, useAuthStore } from "../api/client";
+import { organizationsApi, membershipsApi } from "../api/client";
+import { useAuthStore } from "../store/auth";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Inhaber",

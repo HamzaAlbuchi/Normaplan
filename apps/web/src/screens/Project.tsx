@@ -1,7 +1,8 @@
 import { useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, plansApi, membershipsApi, useAuthStore, type PlanSummary } from "../api/client";
+import { projectsApi, plansApi, membershipsApi, type PlanSummary } from "../api/client";
+import { useAuthStore } from "../store/auth";
 
 const STATE_NAMES: Record<string, string> = {
   BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
