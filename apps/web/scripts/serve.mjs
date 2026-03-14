@@ -7,11 +7,14 @@ import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
 
+console.log("BauPilot web server starting...");
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-// Resolve dist: same dir as this script (apps/web) or cwd (if Railway runs from apps/web)
+// In Docker runner: /app/scripts/serve.mjs -> dist is /app/dist (same level as scripts)
 const distCandidates = [
   path.resolve(__dirname, "..", "dist"),
   path.resolve(process.cwd(), "dist"),
+  "/app/dist",
 ];
 const dist = distCandidates.find((d) => {
   try {
@@ -23,7 +26,7 @@ const dist = distCandidates.find((d) => {
 
 if (!dist) {
   console.error("ERROR: dist/ with index.html not found. Tried:", distCandidates);
-  console.error("cwd:", process.cwd());
+  console.error("cwd:", process.cwd(), "__dirname:", __dirname);
   process.exit(1);
 }
 
@@ -31,7 +34,7 @@ const port = Number(process.env.PORT) || 3000;
 const host = "0.0.0.0";
 
 console.log("Serving from:", dist);
-console.log("PORT:", port, "HOST:", host);
+console.log("Listening on", host + ":" + port);
 
 const mime = {
   ".html": "text/html",
@@ -94,10 +97,10 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(port, host, () => {
-  console.log(`BauPilot web: http://${host}:${port}`);
+  console.log("BauPilot web listening on http://" + host + ":" + port);
 });
 
 server.on("error", (err) => {
-  console.error("Server error:", err);
+  console.error("Server listen error:", err);
   process.exit(1);
 });
