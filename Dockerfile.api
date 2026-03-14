@@ -24,10 +24,12 @@ RUN pnpm --filter @baupilot/types build && \
     pnpm --filter api exec prisma generate && \
     pnpm --filter api build
 
-# pnpm hoists @prisma/client; the app loads it from the store, but generate wrote to apps/api/node_modules.
-# Copy generated client next to the @prisma/client package in the store (symlink target).
-RUN DEST=$(node -e "const fs=require('fs');const p=require('path');const l='/app/apps/api/node_modules/@prisma/client';const t=p.resolve(p.dirname(l),fs.readlinkSync(l));console.log(p.dirname(t));") && \
-    cp -r /app/apps/api/node_modules/.prisma "$DEST/"
+# pnpm: the app loads @prisma/client from the store; generate may write under apps/api or under .pnpm.
+# Find the generated .prisma/client and copy it into the store path that default.js expects.
+RUN SRC=$(find /app -type d -name 'client' -path '*/.prisma/client' 2>/dev/null | head -1) && \
+    PRISMA_STORE=$(find /app/node_modules/.pnpm -maxdepth 1 -type d -name '@prisma+client*' 2>/dev/null | head -1)/node_modules && \
+    mkdir -p "$PRISMA_STORE/.prisma" && \
+    cp -r "$SRC" "$PRISMA_STORE/.prisma/"
 
 ENV NODE_ENV=production
 EXPOSE 3001
