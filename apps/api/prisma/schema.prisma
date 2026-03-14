@@ -24,6 +24,8 @@ model User {
 model Project {
   id        String   @id @default(cuid())
   name      String
+  zipCode   String   // German PLZ (5 digits); mandatory for state-specific building regulations
+  state     String   // Bundesland code (e.g. BY, NW) derived from zipCode
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   userId    String

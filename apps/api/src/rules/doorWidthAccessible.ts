@@ -1,4 +1,5 @@
 import type { Rule } from "./types.js";
+import { VALID_STATE_CODES } from "../plzToState.js";
 
 const MIN_ACCESSIBLE_DOOR_WIDTH_M = 0.9;
 
@@ -8,6 +9,7 @@ export const doorWidthAccessible: Rule = {
   description: "Türen in barrierefreien Bereichen müssen eine lichte Durchgangsbreite von mindestens 90 cm haben.",
   category: "accessibility",
   regulationRef: "DIN 18040-2",
+  applicableStates: VALID_STATE_CODES,
   check(elements) {
     const violations: ReturnType<Rule["check"]> = [];
     for (const d of elements.doors) {

@@ -3,8 +3,16 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, type ProjectSummary } from "../api/client";
 
+const STATE_NAMES: Record<string, string> = {
+  BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
+  HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern", NI: "Niedersachsen",
+  NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen",
+  ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen",
+};
+
 export default function Dashboard() {
   const [newProjectName, setNewProjectName] = useState("");
+  const [newProjectZip, setNewProjectZip] = useState("");
   const queryClient = useQueryClient();
   const { data: projects = [], isLoading } = useQuery({
     queryKey: ["projects"],
@@ -12,17 +20,20 @@ export default function Dashboard() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (name: string) => projectsApi.create(name),
+    mutationFn: ({ name, zipCode }: { name: string; zipCode: string }) =>
+      projectsApi.create(name, zipCode),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       setNewProjectName("");
+      setNewProjectZip("");
     },
   });
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newProjectName.trim()) return;
-    createMutation.mutate(newProjectName.trim());
+    const zip = newProjectZip.trim();
+    if (!newProjectName.trim() || zip.length !== 5) return;
+    createMutation.mutate({ name: newProjectName.trim(), zipCode: zip });
   };
 
   return (
@@ -34,17 +45,38 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <form onSubmit={handleCreate} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center">
-        <input
-          type="text"
-          value={newProjectName}
-          onChange={(e) => setNewProjectName(e.target.value)}
-          placeholder="Projektname eingeben"
-          className="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
+      <form onSubmit={handleCreate} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
+          <div className="flex-1">
+            <label htmlFor="project-name" className="sr-only">Projektname</label>
+            <input
+              id="project-name"
+              type="text"
+              value={newProjectName}
+              onChange={(e) => setNewProjectName(e.target.value)}
+              placeholder="Projektname eingeben"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="w-full sm:w-32">
+            <label htmlFor="project-zip" className="block text-xs font-medium text-slate-500 mb-1">PLZ <span className="text-red-500">*</span></label>
+            <input
+              id="project-zip"
+              type="text"
+              inputMode="numeric"
+              maxLength={5}
+              value={newProjectZip}
+              onChange={(e) => setNewProjectZip(e.target.value.replace(/\D/g, ""))}
+              placeholder="80331"
+              required
+              aria-required="true"
+              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+        </div>
         <button
           type="submit"
-          disabled={createMutation.isPending || !newProjectName.trim()}
+          disabled={createMutation.isPending || !newProjectName.trim() || newProjectZip.length !== 5}
           className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
           {createMutation.isPending ? "Wird erstellt…" : "Neues Projekt"}
@@ -81,6 +113,11 @@ export default function Dashboard() {
                     </span>
                     <span className="mt-1 block text-sm text-slate-500">
                       {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
+                      {p.state && (
+                        <span className="ml-1.5 text-slate-400">
+                          · {STATE_NAMES[p.state] ?? p.state}
+                        </span>
+                      )}
                     </span>
                   </div>
                   <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">

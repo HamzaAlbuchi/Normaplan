@@ -1,4 +1,5 @@
 import type { Rule } from "./types.js";
+import { VALID_STATE_CODES } from "../plzToState.js";
 
 const MAX_ESCAPE_ROUTE_LENGTH_M = 35;
 
@@ -8,6 +9,7 @@ export const escapeRouteLength: Rule = {
   description: "Die Länge des Rettungswegs in eine Richtung darf bestimmte Maße nicht überschreiten.",
   category: "escape",
   regulationRef: "MBO §33, Landesbauordnungen",
+  applicableStates: VALID_STATE_CODES,
   check(elements) {
     const violations: ReturnType<Rule["check"]> = [];
     for (const route of elements.escapeRoutes) {

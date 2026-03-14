@@ -1,4 +1,5 @@
 import type { Rule } from "./types.js";
+import { VALID_STATE_CODES } from "../plzToState.js";
 
 const MIN_WIDTH_M = 1.2;
 const MIN_ACCESSIBLE_WIDTH_M = 1.5;
@@ -9,6 +10,7 @@ export const corridorWidth: Rule = {
   description: "Flure und Rettungswege müssen eine Mindestbreite einhalten.",
   category: "escape",
   regulationRef: "MBO §33, DIN 18065",
+  applicableStates: VALID_STATE_CODES,
   check(elements) {
     const violations: ReturnType<Rule["check"]> = [];
     for (const c of elements.corridors) {

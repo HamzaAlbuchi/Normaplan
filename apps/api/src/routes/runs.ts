@@ -27,12 +27,18 @@ export async function runRoutes(app: FastifyInstance) {
     });
     if (!plan || plan.project.userId !== user.id)
       return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
+    if (!plan.project.zipCode || !plan.project.state)
+      return reply.status(400).send({ code: "MISSING_PROJECT_LOCATION", message: "Projekt muss eine Postleitzahl (PLZ) haben, um Prüfungen auszuführen." });
     if (!plan.elementsJson)
       return reply.status(400).send({ code: "PLAN_NOT_READY", message: "Plan extraction not ready. Upload a JSON plan." });
 
     const elements = JSON.parse(plan.elementsJson) as PlanElements;
     const runId = nanoid();
-    const { violations, ruleVersion } = runRules(elements, { runId, planId: plan.id });
+    const { violations, ruleVersion } = runRules(elements, {
+      runId,
+      planId: plan.id,
+      state: plan.project.state,
+    });
 
     const warningCount = violations.filter((v: RuleViolation) => v.severity === "warning").length;
     const errorCount = violations.filter((v: RuleViolation) => v.severity === "error").length;

@@ -1,4 +1,5 @@
 import type { Rule } from "./types.js";
+import { VALID_STATE_CODES } from "../plzToState.js";
 
 const MIN_WINDOW_RATIO = 1 / 10;
 
@@ -8,6 +9,7 @@ export const windowAreaRoom: Rule = {
   description: "Aufenthaltsräume müssen ausreichend Tageslichtöffnungen haben (z.B. mindestens 1/10 der Bodenfläche).",
   category: "daylight",
   regulationRef: "Landesbauordnungen (z.B. Lichtfläche)",
+  applicableStates: VALID_STATE_CODES,
   check(elements) {
     const violations: ReturnType<Rule["check"]> = [];
     for (const room of elements.rooms) {

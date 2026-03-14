@@ -1,4 +1,5 @@
 import type { Rule } from "./types.js";
+import { VALID_STATE_CODES } from "../plzToState.js";
 
 const MIN_TREAD_DEPTH_M = 0.26;
 const MAX_RISER_HEIGHT_M = 0.2;
@@ -10,6 +11,7 @@ export const stairDimensions: Rule = {
   description: "Stufenfläche (Auftritt) und Steigung müssen im zulässigen Bereich liegen.",
   category: "stairs",
   regulationRef: "DIN 18065",
+  applicableStates: VALID_STATE_CODES,
   check(elements) {
     const violations: ReturnType<Rule["check"]> = [];
     for (const stair of elements.stairs) {

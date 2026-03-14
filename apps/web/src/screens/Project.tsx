@@ -3,6 +3,13 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, plansApi, type PlanSummary } from "../api/client";
 
+const STATE_NAMES: Record<string, string> = {
+  BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
+  HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern", NI: "Niedersachsen",
+  NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen",
+  ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen",
+};
+
 export default function Project() {
   const { projectId } = useParams<{ projectId: string }>();
   const [uploading, setUploading] = useState(false);
@@ -73,7 +80,17 @@ export default function Project() {
 
       <div className="mb-8">
         <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{project?.name ?? "Projekt"}</h1>
-        <p className="mt-1 text-sm text-slate-500">Grundrisse hochladen und Prüflauf starten.</p>
+        <p className="mt-1 text-sm text-slate-500">
+          Grundrisse hochladen und Prüflauf starten.
+          {project?.zipCode && (
+            <span className="block mt-0.5 text-slate-500">
+              Standort: {project.zipCode}
+              {project.state && (
+                <span className="text-slate-400"> · {STATE_NAMES[project.state] ?? project.state}</span>
+              )}
+            </span>
+          )}
+        </p>
       </div>
 
       <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

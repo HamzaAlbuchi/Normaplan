@@ -82,15 +82,19 @@ export const authApi = {
 export interface ProjectSummary {
   id: string;
   name: string;
+  zipCode?: string;
+  state?: string;
   createdAt: string;
   planCount: number;
 }
 
 export const projectsApi = {
   list: () => api<ProjectSummary[]>("/projects"),
-  create: (name: string) =>
-    api<ProjectSummary>("/projects", { method: "POST", body: { name } }),
+  create: (name: string, zipCode: string) =>
+    api<ProjectSummary>("/projects", { method: "POST", body: { name, zipCode } }),
   get: (id: string) => api<ProjectSummary>(`/projects/${id}`),
+  update: (id: string, data: { name?: string; zipCode?: string | null }) =>
+    api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
 };
 
 // Plans
