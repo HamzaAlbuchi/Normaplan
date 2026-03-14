@@ -116,9 +116,10 @@ export interface PlanDetail extends PlanSummary {
 export const plansApi = {
   upload: (projectId: string, file: File, name?: string) => {
     const form = new FormData();
-    form.append("file", file);
+    // Append fields before file so multipart parser receives them before consuming the file stream
     form.append("projectId", projectId);
     if (name) form.append("name", name);
+    form.append("file", file);
     return api<PlanSummary>("/plans/upload", { method: "POST", body: form });
   },
   get: (planId: string) => api<PlanDetail>(`/plans/${planId}`),

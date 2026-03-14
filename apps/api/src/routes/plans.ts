@@ -28,8 +28,15 @@ export async function planRoutes(app: FastifyInstance) {
     const data = await req.file();
     if (!data) return reply.status(400).send({ code: "MISSING_FILE", message: "No file uploaded" });
 
-    const projectId = (data.fields.projectId as unknown as { value: string })?.value;
-    const name = (data.fields.name as unknown as { value: string })?.value || data.filename;
+    const projectIdField = data.fields?.projectId;
+    const projectId =
+      typeof projectIdField === "string"
+        ? projectIdField
+        : (projectIdField as { value?: string } | undefined)?.value;
+    const nameField = data.fields?.name;
+    const name =
+      (typeof nameField === "string" ? nameField : (nameField as { value?: string } | undefined)?.value) ||
+      data.filename;
     if (!projectId) return reply.status(400).send({ code: "MISSING_PROJECT_ID", message: "projectId required" });
 
     const project = await prisma.project.findFirst({ where: { id: projectId, userId: user.id } });
