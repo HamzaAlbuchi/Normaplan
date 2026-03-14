@@ -22,17 +22,31 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     headers.set("Content-Type", "application/json");
   }
 
-  const res = await fetch(`${API_BASE}${path}`, {
+  const url = `${API_BASE}${path}`.replace(/([^:]\/)\/+/g, "$1");
+  const res = await fetch(url, {
     ...rest,
     headers,
     body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
   });
 
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || err.code || String(res.status));
+    let message = res.statusText;
+    try {
+      const data = await res.json();
+      if (data && typeof data === "object" && ("message" in data || "code" in data)) {
+        message = String((data as { message?: string; code?: string }).message ?? (data as { code?: string }).code ?? message);
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message || String(res.status));
   }
-  return res.json() as Promise<T>;
+
+  try {
+    return await res.json() as T;
+  } catch {
+    throw new Error("Invalid JSON response");
+  }
 }
 
 // Auth

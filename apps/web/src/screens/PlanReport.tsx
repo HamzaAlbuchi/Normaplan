@@ -32,7 +32,7 @@ function ViolationCard({ v }: { v: Violation }) {
           </div>
         )}
       </div>
-      {v.elementIds.length > 0 && (
+      {Array.isArray(v.elementIds) && v.elementIds.length > 0 && (
         <p className="mt-2 text-xs text-slate-500">Betroffene Elemente: {v.elementIds.join(", ")}</p>
       )}
     </div>
@@ -121,15 +121,15 @@ export default function PlanReport() {
               <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
                 <h2 className="font-semibold text-slate-800">Prüfbericht</h2>
                 <p className="text-sm text-slate-500 mt-1">
-                  Geprüft am {new Date(run.checkedAt).toLocaleString("de-DE")} ·{" "}
-                  {run.violationCount} mögliche Verstöße ({run.errorCount} Fehler, {run.warningCount} Warnungen)
+                  Geprüft am {run.checkedAt ? new Date(run.checkedAt).toLocaleString("de-DE") : "—"} ·{" "}
+                  {run.violationCount ?? 0} mögliche Verstöße ({run.errorCount ?? 0} Fehler, {run.warningCount ?? 0} Warnungen)
                 </p>
               </div>
               <div className="p-6">
                 <p className="text-xs text-slate-500 mb-4">
                   Dies ist keine rechtliche Bewertung. Bitte prüfen Sie die Hinweise und beziehen Sie die zuständigen Vorschriften ein.
                 </p>
-                {run.violations.length === 0 ? (
+                {!Array.isArray(run.violations) || run.violations.length === 0 ? (
                   <p className="text-slate-600">Keine Verstöße gefunden.</p>
                 ) : (
                   <ul className="space-y-4">
