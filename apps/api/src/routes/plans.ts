@@ -7,7 +7,6 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
-import type { Plan, RuleRun } from "@prisma/client";
 import { runRules } from "@baupilot/rule-engine";
 
 const createBody = z.object({ projectId: z.string().cuid(), name: z.string().min(1) });
@@ -125,13 +124,13 @@ export async function planRoutes(app: FastifyInstance) {
       orderBy: { createdAt: "desc" },
     });
     const lastRuns = await prisma.ruleRun.findMany({
-      where: { planId: { in: plans.map((p: Plan) => p.id) } },
+      where: { planId: { in: plans.map((p: { id: string }) => p.id) } },
       distinct: ["planId"],
       orderBy: { checkedAt: "desc" },
     });
-    const runByPlan = Object.fromEntries(lastRuns.map((r: RuleRun) => [r.planId, r]));
+    const runByPlan = Object.fromEntries(lastRuns.map((r: { planId: string; id: string }) => [r.planId, r]));
 
-    return plans.map((p: Plan) => ({
+    return plans.map((p: { id: string; projectId: string; name: string; fileName: string; status: string; createdAt: Date }) => ({
       id: p.id,
       projectId: p.projectId,
       name: p.name,
