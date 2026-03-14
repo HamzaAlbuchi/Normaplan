@@ -18,17 +18,11 @@ COPY packages/types ./packages/types
 COPY packages/rule-engine ./packages/rule-engine
 COPY apps/api ./apps/api
 
-# Build: packages first, then API; generate Prisma client
+# Build packages, then generate Prisma client (schema outputs to pnpm store path) and build API
 RUN pnpm --filter @baupilot/types build && \
     pnpm --filter @baupilot/rule-engine build && \
     pnpm --filter api exec prisma generate && \
     pnpm --filter api build
-
-# pnpm: copy generated Prisma client into the store path the runtime loads from.
-RUN PRISMA_STORE=$(find /app/node_modules/.pnpm -maxdepth 1 -type d -name '@prisma+client*' 2>/dev/null | head -1)/node_modules && \
-    mkdir -p "$PRISMA_STORE/.prisma" && \
-    if [ -d /app/apps/api/node_modules/.prisma/client ]; then cp -r /app/apps/api/node_modules/.prisma/client "$PRISMA_STORE/.prisma/"; \
-    elif [ -d /app/node_modules/.prisma/client ]; then cp -r /app/node_modules/.prisma/client "$PRISMA_STORE/.prisma/"; fi
 
 ENV NODE_ENV=production
 EXPOSE 3001

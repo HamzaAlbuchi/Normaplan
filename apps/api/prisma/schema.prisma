@@ -3,6 +3,8 @@
 
 generator client {
   provider = "prisma-client-js"
+  // pnpm: generate into the store path so the runtime finds the client (update path if you upgrade @prisma/client)
+  output   = "../../../node_modules/.pnpm/@prisma+client@5.22.0_prisma@5.22.0/node_modules/.prisma/client"
 }
 
 datasource db {
