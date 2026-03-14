@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
+    "start": "serve dist -s -l ${PORT:-3000}",
     "lint": "eslint . --ext ts,tsx"
   },
   "dependencies": {
@@ -14,7 +15,8 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.28.0",
-    "zustand": "^4.5.5"
+    "zustand": "^4.5.5",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@types/react": "^18.3.12",

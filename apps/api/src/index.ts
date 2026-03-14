@@ -8,7 +8,10 @@ import { runRoutes } from "./routes/runs.js";
 
 const app = Fastify({ logger: true });
 
-await app.register(cors, { origin: true });
+const corsOrigin = process.env.CORS_ORIGIN;
+await app.register(cors, {
+  origin: corsOrigin ? corsOrigin.split(",").map((o) => o.trim()) : true,
+});
 await app.register(multipart, { limits: { fileSize: 50 * 1024 * 1024 } }); // 50 MB
 
 app.get("/health", async () => ({ status: "ok", service: "baupilot-api" }));
