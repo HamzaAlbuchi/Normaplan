@@ -83,7 +83,7 @@ model RuleViolation {
   reason         String?  // dismiss/defer reason code
   comment        String?  // optional free-text
   decidedByUserId String?
-  decidedBy      User?    @relation(fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  decidedBy      User?    @relation("decidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
   decidedAt      DateTime?
 
   reviewHistory ViolationReview[]
