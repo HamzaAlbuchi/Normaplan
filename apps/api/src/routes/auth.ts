@@ -3,8 +3,19 @@ import { z } from "zod";
 import { prisma } from "../db.js";
 import { hashPassword, verifyPassword, createToken, requireAuth } from "../auth.js";
 
-const registerBody = z.object({ email: z.string().email(), password: z.string().min(8), name: z.string().optional() });
+const registerBody = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  name: z.string().optional(),
+  invitationKey: z.string().optional(),
+});
 const loginBody = z.object({ email: z.string().email(), password: z.string() });
+
+function getValidInvitationKeys(): string[] {
+  const raw = process.env.INVITATION_KEYS;
+  if (!raw || typeof raw !== "string") return [];
+  return raw.split(",").map((k) => k.trim()).filter(Boolean);
+}
 const changePasswordBody = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(8),
@@ -15,6 +26,16 @@ export async function authRoutes(app: FastifyInstance) {
   app.post("/register", async (req, reply) => {
     const body = registerBody.safeParse(req.body);
     if (!body.success) return reply.status(400).send({ code: "VALIDATION_ERROR", message: body.error.message });
+    const validKeys = getValidInvitationKeys();
+    if (validKeys.length > 0) {
+      const key = (body.data.invitationKey ?? "").trim();
+      if (!key || !validKeys.includes(key)) {
+        return reply.status(403).send({
+          code: "INVALID_INVITATION_KEY",
+          message: "Ungültiger oder abgelaufener Einladungsschlüssel.",
+        });
+      }
+    }
     const existing = await prisma.user.findUnique({ where: { email: body.data.email } });
     if (existing) return reply.status(409).send({ code: "EMAIL_EXISTS", message: "Email already registered" });
     const passwordHash = await hashPassword(body.data.password);

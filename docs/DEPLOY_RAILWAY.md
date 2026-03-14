@@ -45,6 +45,7 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
    - `JWT_SECRET` = a long random string (e.g. generate with `openssl rand -hex 32`)
    - `NODE_ENV` = `production`
    - `CORS_ORIGIN` = your **Web** app URL, e.g. `https://baupilot.up.railway.app` (so the browser allows API calls from the frontend; no trailing slash)
+   - `INVITATION_KEYS` = comma-separated list of valid registration keys (e.g. `baupilot-mvp-2024,another-key`). Only users who have a key can register. Leave **unset** for local dev (registration allowed without a key).
 
    If your Postgres service exposes a **Reference** (e.g. `${{Postgres.DATABASE_URL}}`), you can use that for `DATABASE_URL` so it stays in sync.
 

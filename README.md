@@ -8,7 +8,7 @@ Architects upload a floor plan (JSON or PDF) and receive **warnings about possib
 
 ## Features
 
-- **Auth:** Register, login (JWT), profile with **change password** and **edit name**.
+- **Auth:** Register (with optional **invitation key** when `INVITATION_KEYS` is set), login (JWT), profile with **change password** and **edit name**.
 - **Projects & plans:** Create projects, upload **JSON** or **PDF** plans. PDF text is extracted and parsed heuristically (best-effort); JSON is more reliable for precise checks.
 - **Rule engine:** Five rules: corridor width, door width (accessible), window area vs room size, escape route length, stair dimensions. All use “possible violation” wording and reference DIN/MBO where applicable.
 - **Report:** Violations are grouped into **Critical**, **Warnings**, and **Suggestions**. Export the report **as PDF** via the browser print dialog (Save as PDF).

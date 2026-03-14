@@ -6,6 +6,7 @@ import { useAuthStore } from "../store/auth";
 export default function Register() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [invitationKey, setInvitationKey] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,12 @@ export default function Register() {
     }
     setLoading(true);
     try {
-      const { token, user } = await authApi.register(email, password, name || undefined);
+      const { token, user } = await authApi.register(
+        email,
+        password,
+        invitationKey.trim() || "",
+        name || undefined
+      );
       setAuth(token, user);
       navigate("/", { replace: true });
     } catch (err) {
@@ -44,6 +50,20 @@ export default function Register() {
               {error}
             </div>
           )}
+          <div>
+            <label htmlFor="invitationKey" className="block text-sm font-medium text-slate-700 mb-1">
+              Einladungsschlüssel
+            </label>
+            <input
+              id="invitationKey"
+              type="text"
+              value={invitationKey}
+              onChange={(e) => setInvitationKey(e.target.value)}
+              placeholder="Nur mit Einladung (von Administrator)"
+              className="w-full rounded-lg border border-slate-300 px-3 py-2 focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+            />
+            <p className="mt-1 text-xs text-slate-500">Erforderlich, wenn Einladungsmodus aktiv ist.</p>
+          </div>
           <div>
             <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">
               Name (optional)

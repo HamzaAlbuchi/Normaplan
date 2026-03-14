@@ -63,10 +63,10 @@ export const authApi = {
       method: "POST",
       body: { email, password },
     }),
-  register: (email: string, password: string, name?: string) =>
+  register: (email: string, password: string, invitationKey: string, name?: string) =>
     api<{ token: string; user: UserProfile }>("/auth/register", {
       method: "POST",
-      body: { email, password, name },
+      body: { email, password, invitationKey, name },
     }),
   getMe: () => api<UserProfile>("/auth/me"),
   updateProfile: (data: { name?: string }) =>
