@@ -48,17 +48,7 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 
 **If you prefer not to use the Dockerfile:** set **Root Directory** to empty, **Build Command** to `pnpm install && pnpm run build:packages && pnpm --filter api build`, and **Start Command** to `pnpm --filter api start`. If the build still fails (e.g. “Cannot find module '@baupilot/types'”), switch to the Dockerfile method above.
 
-**Run migrations once**
-
-10. In the API service, open **Settings** → run a one-off command, or use Railway CLI:
-    ```bash
-    railway run pnpm --filter api exec prisma migrate deploy
-    ```
-    Or from your machine with Railway CLI linked to this project:
-    ```bash
-    railway run pnpm --filter api exec prisma migrate deploy
-    ```
-    That applies migrations to the Railway Postgres database.
+**Migrations:** The Docker image runs `prisma migrate deploy` automatically on every start. You don’t need to run any commands manually—just set `DATABASE_URL` and deploy.
 
 ---
 
@@ -123,7 +113,7 @@ For multiple origins use a comma-separated list. If you see CORS errors, double-
 
 - [ ] PostgreSQL added and `DATABASE_URL` copied.
 - [ ] API service: Dockerfile path `Dockerfile.api`, variables `DATABASE_URL`, `JWT_SECRET`, `NODE_ENV=production`.
-- [ ] **Migrations run once** (required or the API will crash on first DB access): see “Run migrations once” in Step 2.
+- [ ] Migrations run automatically on container start (no manual step).
 - [ ] API domain generated and URL noted.
 - [ ] Web service: same repo, build/start as in Step 3, variable `VITE_API_URL` = `https://YOUR-API-URL/api`.
 - [ ] Web domain generated. Open the web URL, register, create a project, upload `docs/sample-plan.json`, run a check.
@@ -142,17 +132,28 @@ If the API build succeeds but the service then **crashes** or restarts:
    - **`DATABASE_URL` not set or wrong**  
      The API exits with `FATAL: DATABASE_URL environment variable is not set` or fails to connect. Fix: In the API service → **Variables**, set `DATABASE_URL` to the Postgres connection string (from the Postgres service → Variables or Connect). Use the **reference** (e.g. `${{Postgres.DATABASE_URL}}`) if available so it stays in sync.
 
-   - **Migrations not run**  
-     You see a Prisma error like “relation does not exist” or “table … does not exist”. Fix: Run migrations once against the Railway database:
-     ```bash
-     railway run pnpm --filter api exec prisma migrate deploy
-     ```
-     (Install [Railway CLI](https://docs.railway.app/develop/cli) and run from your repo, or use a one-off command in Railway if it supports it.)
+   - **Migrations not applied**  
+     You see a Prisma error like “relation does not exist” or “table … does not exist”. The image runs `prisma migrate deploy` on start; if it still fails, check that `DATABASE_URL` is set and the deploy finished (see logs). You can run migrations once manually with [Railway CLI](https://docs.railway.app/develop/cli): `railway run pnpm --filter api exec prisma migrate deploy`.
 
    - **Database not reachable**  
      Railway Postgres is only reachable from within Railway. Ensure `DATABASE_URL` is the one Railway provides for the Postgres service in the same project (not a local or other external URL).
 
 3. **Redeploy** after changing variables or running migrations.
+
+---
+
+## Build taking a long time
+
+The first build can take several minutes because `pnpm install` resolves the full dependency tree without a lockfile. To speed up future builds:
+
+1. Locally run `pnpm install` so that `pnpm-lock.yaml` is created.
+2. Commit and push `pnpm-lock.yaml`.
+3. In `Dockerfile.api`, add before `RUN pnpm install`:  
+   `COPY pnpm-lock.yaml ./`  
+   and change that line to:  
+   `RUN pnpm install --frozen-lockfile`
+
+Then Railway can reuse the install layer when only your code changes.
 
 ---
 

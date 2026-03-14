@@ -24,15 +24,15 @@ RUN pnpm --filter @baupilot/types build && \
     pnpm --filter api exec prisma generate && \
     pnpm --filter api build
 
-# pnpm: the app loads @prisma/client from the store; generate may write under apps/api or under .pnpm.
-# Find the generated .prisma/client and copy it into the store path that default.js expects.
-RUN SRC=$(find /app -type d -name 'client' -path '*/.prisma/client' 2>/dev/null | head -1) && \
-    PRISMA_STORE=$(find /app/node_modules/.pnpm -maxdepth 1 -type d -name '@prisma+client*' 2>/dev/null | head -1)/node_modules && \
+# pnpm: copy generated Prisma client into the store path the runtime loads from.
+RUN PRISMA_STORE=$(find /app/node_modules/.pnpm -maxdepth 1 -type d -name '@prisma+client*' 2>/dev/null | head -1)/node_modules && \
     mkdir -p "$PRISMA_STORE/.prisma" && \
-    cp -r "$SRC" "$PRISMA_STORE/.prisma/"
+    if [ -d /app/apps/api/node_modules/.prisma/client ]; then cp -r /app/apps/api/node_modules/.prisma/client "$PRISMA_STORE/.prisma/"; \
+    elif [ -d /app/node_modules/.prisma/client ]; then cp -r /app/node_modules/.prisma/client "$PRISMA_STORE/.prisma/"; fi
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
 WORKDIR /app/apps/api
-CMD ["node", "dist/index.js"]
+# Run migrations then start (so Railway never needs manual migrate commands)
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]
