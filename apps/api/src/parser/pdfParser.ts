@@ -1,11 +1,14 @@
 import type { PlanElements } from "../types.js";
 
+/** Type for pdf-parse (no @types package; avoid implicit any) */
+type PdfParseFn = (buffer: Buffer) => Promise<{ text: string }>;
+
 /**
  * Extract text from a PDF buffer using pdf-parse (CJS).
  */
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  const mod = await import("pdf-parse");
-  const pdfParse = typeof mod.default === "function" ? mod.default : (mod as (buf: Buffer) => Promise<{ text: string }>);
+  const mod = await import("pdf-parse") as { default?: PdfParseFn };
+  const pdfParse: PdfParseFn = typeof mod.default === "function" ? mod.default : (mod as unknown as PdfParseFn);
   const result = await pdfParse(buffer);
   return typeof result?.text === "string" ? result.text : "";
 }
