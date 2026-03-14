@@ -30,7 +30,7 @@ export async function runRoutes(app: FastifyInstance) {
     if (!plan.project.zipCode || !plan.project.state)
       return reply.status(400).send({ code: "MISSING_PROJECT_LOCATION", message: "Projekt muss eine Postleitzahl (PLZ) haben, um Prüfungen auszuführen." });
     if (!plan.elementsJson)
-      return reply.status(400).send({ code: "PLAN_NOT_READY", message: "Plan extraction not ready. Upload a JSON plan." });
+      return reply.status(400).send({ code: "PLAN_NOT_READY", message: "Plan extraction not ready. Upload a JSON, PDF, or IFC plan." });
 
     const elements = JSON.parse(plan.elementsJson) as PlanElements;
     const runId = nanoid();

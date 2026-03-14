@@ -8,6 +8,7 @@ import { requireAuth } from "../auth.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
 import { parsePlanFromPdf } from "../parser/pdfParser.js";
+import { parsePlanFromIfc } from "../parser/ifcParser.js";
 
 const createBody = z.object({ projectId: z.string().cuid(), name: z.string().min(1) });
 
@@ -58,9 +59,18 @@ export async function planRoutes(app: FastifyInstance) {
         status = "failed";
         extractionError = e instanceof Error ? e.message : "PDF extraction failed";
       }
+    } else if (ext === ".ifc") {
+      try {
+        const elements = await parsePlanFromIfc(buf);
+        elementsJson = JSON.stringify(elements);
+        status = "ready";
+      } catch (e) {
+        status = "failed";
+        extractionError = e instanceof Error ? e.message : "IFC/BIM extraction failed";
+      }
     } else {
       status = "uploaded";
-      extractionError = "Unsupported file type. Use .json or .pdf.";
+      extractionError = "Unsupported file type. Use .json, .pdf, or .ifc (BIM).";
     }
 
     const uploadDir = path.join(config.uploadDir, projectId);

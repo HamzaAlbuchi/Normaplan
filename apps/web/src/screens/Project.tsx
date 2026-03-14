@@ -96,13 +96,13 @@ export default function Project() {
       <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-sm font-semibold text-slate-900">Plan hochladen</h2>
         <p className="mt-1 text-sm text-slate-500">
-          JSON- oder PDF-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege).
+          JSON-, PDF- oder IFC/BIM-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege).
         </p>
         <div className="mt-4">
           <input
             ref={fileInputRef}
             type="file"
-            accept=".json,.pdf"
+            accept=".json,.pdf,.ifc"
             onChange={handleFileChange}
             disabled={uploading}
             className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
