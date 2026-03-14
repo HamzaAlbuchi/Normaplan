@@ -33,6 +33,23 @@ export default function Project() {
     onError: (err) => setUploadError(err instanceof Error ? err.message : "Upload fehlgeschlagen"),
   });
 
+  const deletePlanMutation = useMutation({
+    mutationFn: (planId: string) => plansApi.delete(planId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["plans", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+    },
+  });
+
+  const handleDeletePlan = (plan: PlanSummary, e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!window.confirm(`Plan „${plan.name}" wirklich löschen?`)) return;
+    deletePlanMutation.mutate(plan.id, {
+      onSuccess: () => {},
+    });
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -57,7 +74,7 @@ export default function Project() {
       <div className="rounded-xl border border-slate-200 bg-white p-6 mb-8">
         <h2 className="font-medium text-slate-800 mb-2">Plan hochladen</h2>
         <p className="text-sm text-slate-500 mb-4">
-          MVP: Laden Sie eine <strong>JSON-Datei</strong> mit Plan-Elementen hoch (Raum, Flur, Türen, Fenster, Treppen, Rettungsweg). PDF-Extraktion folgt später.
+          Laden Sie eine <strong>JSON-</strong> oder <strong>PDF-</strong>Datei mit Plan-Elementen hoch (Raum, Flur, Türen, Fenster, Treppen, Rettungsweg).
         </p>
         <input
           ref={fileInputRef}
@@ -81,10 +98,10 @@ export default function Project() {
       ) : (
         <ul className="space-y-3">
           {plans.map((p: PlanSummary) => (
-            <li key={p.id}>
+            <li key={p.id} className="flex items-stretch gap-2">
               <Link
                 to={`/plan/${p.id}`}
-                className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-primary-300 hover:bg-primary-50/30 transition"
+                className="flex-1 block rounded-xl border border-slate-200 bg-white p-4 hover:border-primary-300 hover:bg-primary-50/30 transition"
               >
                 <span className="font-medium text-slate-800">{p.name}</span>
                 <span className="ml-2 text-slate-500 text-sm">
@@ -94,6 +111,15 @@ export default function Project() {
                   <span className="ml-2 text-primary-600 text-sm">· Bericht anzeigen</span>
                 )}
               </Link>
+              <button
+                type="button"
+                onClick={(e) => handleDeletePlan(p, e)}
+                disabled={deletePlanMutation.isPending}
+                className="px-3 rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-50"
+                title="Plan löschen"
+              >
+                Löschen
+              </button>
             </li>
           ))}
         </ul>

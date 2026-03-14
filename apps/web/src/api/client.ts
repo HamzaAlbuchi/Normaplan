@@ -42,6 +42,7 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
     throw new Error(message || String(res.status));
   }
 
+  if (res.status === 204 || res.headers.get("content-length") === "0") return undefined as T;
   try {
     return await res.json() as T;
   } catch {
@@ -50,16 +51,30 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
 }
 
 // Auth
+export interface UserProfile {
+  id: string;
+  email: string;
+  name?: string;
+}
+
 export const authApi = {
   login: (email: string, password: string) =>
-    api<{ token: string; user: { id: string; email: string; name?: string } }>("/auth/login", {
+    api<{ token: string; user: UserProfile }>("/auth/login", {
       method: "POST",
       body: { email, password },
     }),
   register: (email: string, password: string, name?: string) =>
-    api<{ token: string; user: { id: string; email: string; name?: string } }>("/auth/register", {
+    api<{ token: string; user: UserProfile }>("/auth/register", {
       method: "POST",
       body: { email, password, name },
+    }),
+  getMe: () => api<UserProfile>("/auth/me"),
+  updateProfile: (data: { name?: string }) =>
+    api<UserProfile>("/auth/me", { method: "PATCH", body: data }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    api<{ ok: boolean }>("/auth/change-password", {
+      method: "POST",
+      body: { currentPassword, newPassword },
     }),
 };
 
@@ -105,6 +120,8 @@ export const plansApi = {
   get: (planId: string) => api<PlanDetail>(`/plans/${planId}`),
   listByProject: (projectId: string) =>
     api<PlanSummary[]>(`/plans/project/${projectId}`),
+  delete: (planId: string) =>
+    api<void>(`/plans/${planId}`, { method: "DELETE" }),
 };
 
 // Runs

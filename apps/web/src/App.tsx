@@ -6,6 +6,7 @@ import Register from "./screens/Register";
 import Dashboard from "./screens/Dashboard";
 import Project from "./screens/Project";
 import PlanReport from "./screens/PlanReport";
+import Profile from "./screens/Profile";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -29,6 +30,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="project/:projectId" element={<Project />} />
         <Route path="plan/:planId" element={<PlanReport />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -7,6 +7,7 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
+import { parsePlanFromPdf } from "../parser/pdfParser.js";
 
 const createBody = z.object({ projectId: z.string().cuid(), name: z.string().min(1) });
 
@@ -48,10 +49,18 @@ export async function planRoutes(app: FastifyInstance) {
         status = "failed";
         extractionError = e instanceof Error ? e.message : "Invalid JSON";
       }
+    } else if (ext === ".pdf") {
+      try {
+        const elements = await parsePlanFromPdf(buf);
+        elementsJson = JSON.stringify(elements);
+        status = "ready";
+      } catch (e) {
+        status = "failed";
+        extractionError = e instanceof Error ? e.message : "PDF extraction failed";
+      }
     } else {
-      // PDF or other: store file, mark as uploaded; extraction not implemented in MVP
       status = "uploaded";
-      extractionError = "Plan extraction from PDF not implemented in MVP. Upload a JSON plan file for testing.";
+      extractionError = "Unsupported file type. Use .json or .pdf.";
     }
 
     const uploadDir = path.join(config.uploadDir, projectId);
@@ -111,6 +120,23 @@ export async function planRoutes(app: FastifyInstance) {
     };
     if (plan.elementsJson) response.elements = JSON.parse(plan.elementsJson);
     return response;
+  });
+
+  app.delete("/:planId", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { planId } = req.params as { planId: string };
+    const plan = await prisma.plan.findFirst({
+      where: { id: planId },
+      include: { project: true },
+    });
+    if (!plan || plan.project.userId !== user.id)
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
+    if (plan.filePath) {
+      const fullPath = path.join(config.uploadDir, plan.filePath);
+      await fs.unlink(fullPath).catch(() => {});
+    }
+    await prisma.plan.delete({ where: { id: planId } });
+    return reply.status(204).send();
   });
 
   app.get("/project/:projectId", async (req, reply) => {

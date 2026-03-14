@@ -24,7 +24,10 @@ export default function Layout() {
           BauPilot
         </Link>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-600">{user?.email}</span>
+          <Link to="/profile" className="text-sm text-slate-600 hover:text-primary-600">
+            Profil
+          </Link>
+          <span className="text-sm text-slate-500">{user?.email}</span>
           <button
             type="button"
             onClick={handleLogout}
