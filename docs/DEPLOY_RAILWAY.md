@@ -31,26 +31,22 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 2. Select your **normaplan** (or **baupilot**) repo.
 3. Railway will add a new service from that repo. We’ll configure it as the API.
 
-**Configure the API service:**
+**Configure the API service – use the Dockerfile (recommended):**
 
-4. Open the new service → **Settings** (or **Variables**).
-5. **Root Directory**: leave empty (repo root) so the monorepo is used.
-6. **Build Command** (optional if Railway infers it; otherwise set explicitly):
-   ```bash
-   pnpm install && pnpm run build:packages && pnpm --filter api build
-   ```
-7. **Start Command**:
-   ```bash
-   pnpm --filter api start
-   ```
-8. **Variables** – add (use the Postgres service’s values):
+4. Open the new service → **Settings**.
+5. Under **Build**, set **Dockerfile Path** to: `Dockerfile.api`  
+   (and leave **Root Directory** empty so the repo root is used).
+6. Railway will then **build from the Dockerfile** (no separate Build/Start commands needed). The Dockerfile installs deps, builds `@baupilot/types` and `@baupilot/rule-engine`, then the API, and runs `node dist/index.js`.
+7. **Variables** – add (use the Postgres service’s values):
    - `DATABASE_URL` = (paste the full URL from the Postgres service, e.g. `postgresql://user:pass@host:port/railway`)
    - `JWT_SECRET` = a long random string (e.g. generate with `openssl rand -hex 32`)
    - `NODE_ENV` = `production`
 
    If your Postgres service exposes a **Reference** (e.g. `${{Postgres.DATABASE_URL}}`), you can use that for `DATABASE_URL` so it stays in sync.
 
-9. Save and deploy. Railway will run the build and then `pnpm --filter api start`. After deploy, open the API service → **Settings** → **Networking** → **Generate Domain**. Copy the public URL (e.g. `https://your-api-name.up.railway.app`). You’ll need it for the frontend.
+9. Save and deploy. After deploy, open the API service → **Settings** → **Networking** → **Generate Domain**. Copy the public URL (e.g. `https://your-api-name.up.railway.app`). You’ll need it for the frontend.
+
+**If you prefer not to use the Dockerfile:** set **Root Directory** to empty, **Build Command** to `pnpm install && pnpm run build:packages && pnpm --filter api build`, and **Start Command** to `pnpm --filter api start`. If the build still fails (e.g. “Cannot find module '@baupilot/types'”), switch to the Dockerfile method above.
 
 **Run migrations once**
 

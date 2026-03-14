@@ -1,0 +1,31 @@
+# BauPilot API – build from monorepo root so workspace packages are available
+FROM node:20-slim
+
+RUN corepack enable && corepack prepare pnpm@latest --activate
+WORKDIR /app
+
+# Copy workspace and package files
+COPY package.json pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/
+COPY packages/types/package.json ./packages/types/
+COPY packages/rule-engine/package.json ./packages/rule-engine/
+
+# Install dependencies
+RUN pnpm install
+
+# Copy source
+COPY packages/types ./packages/types
+COPY packages/rule-engine ./packages/rule-engine
+COPY apps/api ./apps/api
+
+# Build: packages first, then API; generate Prisma client
+RUN pnpm --filter @baupilot/types build && \
+    pnpm --filter @baupilot/rule-engine build && \
+    pnpm --filter api exec prisma generate && \
+    pnpm --filter api build
+
+ENV NODE_ENV=production
+EXPOSE 3001
+
+WORKDIR /app/apps/api
+CMD ["node", "dist/index.js"]
