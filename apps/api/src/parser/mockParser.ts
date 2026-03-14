@@ -1,4 +1,4 @@
-import type { PlanElements } from "@baupilot/types";
+import type { PlanElements } from "../types.js";
 
 /**
  * MVP: Mock plan parser.

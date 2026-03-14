@@ -7,7 +7,6 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
-import { runRules } from "@baupilot/rule-engine";
 
 const createBody = z.object({ projectId: z.string().cuid(), name: z.string().min(1) });
 

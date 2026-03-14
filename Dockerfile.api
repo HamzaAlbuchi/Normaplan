@@ -1,37 +1,18 @@
-# BauPilot API – use npm in Docker so node_modules layout is simple and Prisma works without hacks
+# BauPilot API – minimal deploy: only apps/api, no monorepo deps. OpenSSL for Prisma.
 FROM node:20-slim
 
-# Prisma schema engine needs OpenSSL (slim image does not include it)
 RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# Copy workspace and package files
-COPY package.json pnpm-workspace.yaml ./
-COPY apps/api/package.json ./apps/api/
-COPY packages/types/package.json ./packages/types/
-COPY packages/rule-engine/package.json ./packages/rule-engine/
+COPY apps/api/package.json ./
+RUN npm install
 
-# npm does not support workspace:*, replace with file: paths
-RUN sed -i 's|"@baupilot/types": "workspace:\*"|"@baupilot/types": "file:../../packages/types"|g' apps/api/package.json && \
-    sed -i 's|"@baupilot/rule-engine": "workspace:\*"|"@baupilot/rule-engine": "file:../../packages/rule-engine"|g' apps/api/package.json && \
-    sed -i 's|"@baupilot/types": "workspace:\*"|"@baupilot/types": "file:../types"|g' packages/rule-engine/package.json
+COPY apps/api ./
 
-# Use npm. Single node_modules tree, no pnpm store, Prisma works as-is.
-RUN npm install --ignore-scripts
-
-# Copy source
-COPY packages/types ./packages/types
-COPY packages/rule-engine ./packages/rule-engine
-COPY apps/api ./apps/api
-
-# Build packages, generate Prisma client, build API (no copy step needed with npm)
-RUN npm run build --workspace=@baupilot/types && \
-    npm run build --workspace=@baupilot/rule-engine && \
-    (cd apps/api && npx prisma generate --schema=prisma/schema.prisma && npx tsc)
+RUN npx prisma generate --schema=prisma/schema.prisma && npx tsc
 
 ENV NODE_ENV=production
 EXPOSE 3001
 
-WORKDIR /app/apps/api
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=prisma/schema.prisma && node dist/index.js"]

@@ -2,8 +2,8 @@ import { FastifyInstance } from "fastify";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { nanoid } from "nanoid";
-import { runRules } from "@baupilot/rule-engine";
-import type { PlanElements, RuleViolation } from "@baupilot/types";
+import { runRules } from "../rules/stub.js";
+import type { PlanElements, RuleViolation } from "../types.js";
 
 export async function runRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {

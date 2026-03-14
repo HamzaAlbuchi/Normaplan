@@ -2,6 +2,8 @@
 
 You can run the full app (API + frontend + PostgreSQL) on [Railway](https://railway.app/) without running anything heavy on your laptop. Railway has a free tier that’s enough for this MVP.
 
+**Simplified MVP (current):** The API is self-contained (no `@baupilot/types` or `@baupilot/rule-engine` in the image). Rule runs return no violations until you wire the full rule engine back in. This keeps the Docker build minimal and deployment reliable; you can extend later.
+
 ---
 
 ## Overview
@@ -37,7 +39,7 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 5. Under **Build**, set **Dockerfile Path** to: `Dockerfile.api`  
    (and leave **Root Directory** empty so the repo root is used).  
    **If you don’t see “Dockerfile Path”:** go to **Variables** and add `RAILWAY_DOCKERFILE_PATH` = `Dockerfile.api`. That forces Railway to use the Dockerfile instead of Railpack/Nixpacks.
-6. Railway will then **build from the Dockerfile** (no separate Build/Start commands needed). The Dockerfile installs deps, builds `@baupilot/types` and `@baupilot/rule-engine`, then the API, and runs `node dist/index.js`.
+6. Railway will then **build from the Dockerfile** (no separate Build/Start commands needed). The Dockerfile only uses `apps/api`: npm install, Prisma generate, TypeScript build, then on start runs migrations and `node dist/index.js`. Rule checks are stubbed (no violations) until you add the full rule engine back.
 7. **Variables** – add (use the Postgres service’s values):
    - `DATABASE_URL` = (paste the full URL from the Postgres service, e.g. `postgresql://user:pass@host:port/railway`)
    - `JWT_SECRET` = a long random string (e.g. generate with `openssl rand -hex 32`)
@@ -47,7 +49,7 @@ Keep this tab open; you’ll need `DATABASE_URL` for the API.
 
 9. Save and deploy. After deploy, open the API service → **Settings** → **Networking** → **Generate Domain**. Copy the public URL (e.g. `https://your-api-name.up.railway.app`). You’ll need it for the frontend.
 
-**If you prefer not to use the Dockerfile:** set **Root Directory** to empty, **Build Command** to `pnpm install && pnpm run build:packages && pnpm --filter api build`, and **Start Command** to `pnpm --filter api start`. If the build still fails (e.g. “Cannot find module '@baupilot/types'”), switch to the Dockerfile method above.
+**If you prefer not to use the Dockerfile:** use **Root Directory** `apps/api`, **Build Command** `npm install && npx prisma generate && npx tsc`, **Start Command** `npx prisma migrate deploy && node dist/index.js`. The Dockerfile is recommended.
 
 **Migrations:** The Docker image runs `prisma migrate deploy` automatically on every start. You don’t need to run any commands manually—just set `DATABASE_URL` and deploy.
 
