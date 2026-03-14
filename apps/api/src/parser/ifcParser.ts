@@ -68,23 +68,8 @@ function findArea(obj: unknown): number | undefined {
  * Maps IfcSpace → rooms/corridors, IfcDoor → doors, IfcWindow → windows, IfcStair/IfcStairFlight → stairs.
  */
 export async function parsePlanFromIfc(buffer: Buffer): Promise<PlanElements> {
-  const webIfc = await import("web-ifc/web-ifc-api-node.js") as {
-    IfcAPI: new () => {
-      Init: (locateFile?: (path: string, prefix: string) => string) => Promise<void>;
-      OpenModel: (data: Uint8Array) => number;
-      CloseModel: (modelID: number) => void;
-      GetModelSchema: (modelID: number) => string;
-      GetTypeCodeFromName: (name: string) => number;
-      GetLineIDsWithType: (modelID: number, type: number, includeInherited?: boolean) => { size: () => number; get: (i: number) => number };
-      GetLine: (modelID: number, expressID: number, flatten?: boolean) => unknown;
-      properties: {
-        getItemProperties: (modelID: number, id: number, recursive?: boolean) => Promise<unknown>;
-        getPropertySets: (modelID: number, elementID?: number, recursive?: boolean) => Promise<unknown[]>;
-      };
-    };
-  };
-
-  const ifcApi = new webIfc.IfcAPI();
+  const { IfcAPI } = await import("web-ifc/web-ifc-api-node.js");
+  const ifcApi = new IfcAPI();
   // Resolve web-ifc package dir (works from apps/api or monorepo root)
   const wasmDir = path.join(process.cwd(), "node_modules", "web-ifc");
   await ifcApi.Init((p: string) => (p.endsWith(".wasm") ? path.join(wasmDir, "web-ifc-node.wasm") : path.join(wasmDir, p)));
