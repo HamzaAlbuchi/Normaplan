@@ -26,7 +26,7 @@ export async function runRoutes(app: FastifyInstance) {
       where: { id: body.planId },
       include: { project: true },
     });
-    if (!plan || plan.project.userId !== user.id)
+    if (!plan || !(await canWorkOnProject(user.id, plan.project.id)))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Plan not found" });
     if (!plan.project.zipCode || !plan.project.state)
       return reply.status(400).send({ code: "MISSING_PROJECT_LOCATION", message: "Projekt muss eine Postleitzahl (PLZ) haben, um Prüfungen auszuführen." });

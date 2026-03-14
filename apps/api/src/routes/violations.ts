@@ -32,7 +32,7 @@ export async function violationRoutes(app: FastifyInstance) {
       where: { id: violationId },
       include: { run: { include: { plan: { include: { project: true } } } } },
     });
-    if (!violation || violation.run.plan.project.userId !== user.id)
+    if (!violation || !(await canReviewViolations(user.id, violation.run.plan.projectId)))
       return reply.status(404).send({ code: "NOT_FOUND", message: "Violation not found" });
 
     const { action, reason, comment } = body.data;
