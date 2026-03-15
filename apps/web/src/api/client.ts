@@ -158,6 +158,7 @@ export interface DashboardStats {
   runCount: number;
   warningCount: number;
   errorCount: number;
+  lastRunAt?: string | null;
 }
 
 export interface ProjectDetail extends ProjectSummary {

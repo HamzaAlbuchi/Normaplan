@@ -46,12 +46,15 @@ export async function projectRoutes(app: FastifyInstance) {
     const projectIds = await listAccessibleProjectIds(user.id);
     const runs = await prisma.ruleRun.findMany({
       where: { plan: { projectId: { in: projectIds } } },
-      select: { warningCount: true, errorCount: true },
+      select: { warningCount: true, errorCount: true, checkedAt: true },
+      orderBy: { checkedAt: "desc" },
     });
+    const lastRun = runs[0];
     return {
       runCount: runs.length,
       warningCount: runs.reduce((s, r) => s + r.warningCount, 0),
       errorCount: runs.reduce((s, r) => s + r.errorCount, 0),
+      lastRunAt: lastRun?.checkedAt?.toISOString() ?? null,
     };
   });
 

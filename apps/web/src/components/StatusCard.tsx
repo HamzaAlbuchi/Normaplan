@@ -1,85 +1,191 @@
-interface StatusCardProps {
-  runCount: number;
-  warningCount: number;
+/**
+ * Compliance Overview Card – enterprise-grade dashboard summary for BauPilot.
+ * Displays test results with clear hierarchy, severity visualization, and status messaging.
+ */
+
+export interface ComplianceOverviewProps {
+  /** Number of critical findings (errors) */
   errorCount: number;
+  /** Number of warnings */
+  warningCount: number;
+  /** Number of info/suggestion findings (optional) */
+  infoCount?: number;
+  /** Total number of test runs */
+  runCount: number;
+  /** Last run timestamp (optional) */
+  lastRunAt?: string | null;
+  /** Section label */
   title?: string;
-  compact?: boolean;
 }
 
-export default function StatusCard({ runCount, warningCount, errorCount, title = "Prüfstatus", compact }: StatusCardProps) {
-  const total = warningCount + errorCount;
-  const hasErrors = errorCount > 0;
+function getStatusMessage(props: ComplianceOverviewProps): string {
+  const { errorCount, warningCount } = props;
+  const total = errorCount + warningCount;
+
+  if (total === 0) return "Keine kritischen Befunde.";
+  if (errorCount > 0)
+    return `${errorCount} ${errorCount === 1 ? "kritischer Befund" : "kritische Befunde"} erfordern Prüfung.`;
+  if (warningCount > 0)
+    return `${warningCount} ${warningCount === 1 ? "Hinweis" : "Hinweise"} zur Überprüfung.`;
+  return "Prüfung abgeschlossen.";
+}
+
+export default function StatusCard(props: ComplianceOverviewProps) {
+  const {
+    errorCount = 0,
+    warningCount = 0,
+    infoCount = 0,
+    runCount = 0,
+    lastRunAt,
+    title = "Prüfergebnisse",
+  } = props;
+
+  const totalFindings = errorCount + warningCount + infoCount;
+  const hasCritical = errorCount > 0;
   const hasWarnings = warningCount > 0;
-  const allClear = total === 0;
+  const allClear = totalFindings === 0;
 
-  const status = allClear ? "ok" : hasErrors ? "error" : "warning";
-  const statusConfig = {
-    ok: {
-      label: "Alles in Ordnung",
-      bg: "bg-emerald-50",
-      border: "border-emerald-200",
-      text: "text-emerald-800",
-    },
-    warning: {
-      label: `${warningCount} Warnung${warningCount !== 1 ? "en" : ""}`,
-      bg: "bg-amber-50",
-      border: "border-amber-200",
-      text: "text-amber-800",
-    },
-    error: {
-      label: `${errorCount} Verstoß${errorCount !== 1 ? "e" : ""}${warningCount > 0 ? `, ${warningCount} Warnungen` : ""}`,
-      bg: "bg-red-50",
-      border: "border-red-200",
-      text: "text-red-800",
-    },
-  };
-
-  const config = statusConfig[status as keyof typeof statusConfig];
-  const chartTotal = errorCount + warningCount || 1;
-  const errorPct = (errorCount / chartTotal) * 100;
-  const warningPct = (warningCount / chartTotal) * 100;
+  // Segmented bar: compute widths (normalize to 100% when we have findings)
+  const barTotal = totalFindings || 1;
+  const errorPct = (errorCount / barTotal) * 100;
+  const warningPct = (warningCount / barTotal) * 100;
+  const infoPct = (infoCount / barTotal) * 100;
 
   return (
-    <div className={`rounded-lg border ${config.border} ${config.bg} p-5`}>
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium text-slate-500">{title}</p>
-          <p className={`mt-1 font-semibold ${config.text}`}>
-            {allClear ? "✓ " : ""}
-            {config.label}
-          </p>
-          {runCount > 0 && (
-            <p className="mt-0.5 text-xs text-slate-500">{runCount} Prüfläufe</p>
-          )}
-        </div>
-        {!compact && total > 0 && (
-          <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
-            <div className="flex h-2 w-20 overflow-hidden rounded-full bg-slate-200">
-              {errorCount > 0 && (
-                <div
-                  className="bg-red-500 h-full"
-                  style={{ width: `${errorPct}%` }}
-                  title={`${errorCount} Fehler`}
-                />
-              )}
-              {warningCount > 0 && (
-                <div
-                  className="bg-amber-500 h-full"
-                  style={{ width: `${warningPct}%` }}
-                  title={`${warningCount} Warnungen`}
-                />
+    <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
+      {/* Card header */}
+      <div className="border-b border-slate-100 px-6 py-4">
+        <p className="text-xs font-medium uppercase tracking-wider text-slate-400">
+          {title}
+        </p>
+      </div>
+
+      {/* Main content */}
+      <div className="px-6 py-5">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+          {/* Left: metrics */}
+          <div className="min-w-0 flex-1 space-y-5">
+            {/* Primary metrics */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 sm:gap-6">
+              <div>
+                <p className="text-xs font-medium text-slate-500">Kritisch</p>
+                <p
+                  className={`mt-0.5 text-2xl font-semibold tabular-nums ${
+                    hasCritical ? "text-red-700" : "text-slate-400"
+                  }`}
+                >
+                  {errorCount}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-medium text-slate-500">Warnungen</p>
+                <p
+                  className={`mt-0.5 text-2xl font-semibold tabular-nums ${
+                    hasWarnings ? "text-amber-700" : "text-slate-400"
+                  }`}
+                >
+                  {warningCount}
+                </p>
+              </div>
+              {infoCount !== undefined && infoCount > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-slate-500">Hinweise</p>
+                  <p className="mt-0.5 text-2xl font-semibold tabular-nums text-slate-600">
+                    {infoCount}
+                  </p>
+                </div>
               )}
             </div>
-            <div className="flex gap-3 text-xs">
-              {errorCount > 0 && (
-                <span className="text-red-600 font-medium">{errorCount} Fehler</span>
+
+            {/* Supporting metadata */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500">
+              {runCount > 0 && (
+                <span>{runCount} {runCount === 1 ? "Prüflauf" : "Prüfläufe"}</span>
               )}
-              {warningCount > 0 && (
-                <span className="text-amber-600 font-medium">{warningCount} Warnungen</span>
+              {lastRunAt && (
+                <span>
+                  Zuletzt: {new Date(lastRunAt).toLocaleDateString("de-DE", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </span>
               )}
             </div>
+
+            {/* Status sentence */}
+            <p
+              className={`text-sm font-medium ${
+                allClear
+                  ? "text-slate-600"
+                  : hasCritical
+                    ? "text-red-700"
+                    : "text-amber-700"
+              }`}
+            >
+              {getStatusMessage(props)}
+            </p>
           </div>
-        )}
+
+          {/* Right: severity visualization */}
+          <div className="flex flex-shrink-0 flex-col items-end gap-3 sm:pt-0">
+            {totalFindings > 0 ? (
+              <>
+                {/* Segmented horizontal bar */}
+                <div className="flex h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                  {errorCount > 0 && (
+                    <div
+                      className="h-full bg-red-400 transition-all"
+                      style={{ width: `${errorPct}%` }}
+                      title={`${errorCount} kritisch`}
+                    />
+                  )}
+                  {warningCount > 0 && (
+                    <div
+                      className="h-full bg-amber-400 transition-all"
+                      style={{ width: `${warningPct}%` }}
+                      title={`${warningCount} Warnungen`}
+                    />
+                  )}
+                  {infoCount > 0 && (
+                    <div
+                      className="h-full bg-slate-400 transition-all"
+                      style={{ width: `${infoPct}%` }}
+                      title={`${infoCount} Hinweise`}
+                    />
+                  )}
+                </div>
+                {/* Compact badge group */}
+                <div className="flex flex-wrap justify-end gap-2">
+                  {errorCount > 0 && (
+                    <span className="inline-flex items-center rounded-md bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                      {errorCount} kritisch
+                    </span>
+                  )}
+                  {warningCount > 0 && (
+                    <span className="inline-flex items-center rounded-md bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      {warningCount} Warnung{warningCount !== 1 ? "en" : ""}
+                    </span>
+                  )}
+                  {infoCount > 0 && (
+                    <span className="inline-flex items-center rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-600">
+                      {infoCount} Hinweis{infoCount !== 1 ? "e" : ""}
+                    </span>
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex h-2 w-24 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full w-full rounded-full bg-emerald-200" />
+                </div>
+                <span className="inline-flex items-center rounded-md bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                  Keine Befunde
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

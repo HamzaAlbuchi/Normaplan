@@ -141,7 +141,8 @@ export default function Dashboard() {
           runCount={stats?.runCount ?? 0}
           warningCount={stats?.warningCount ?? 0}
           errorCount={stats?.errorCount ?? 0}
-          title={canCreateProject ? "Prüfergebnisse" : "Prüfergebnisse"}
+          lastRunAt={stats?.lastRunAt}
+          title="Prüfergebnisse"
         />
       </div>
 
