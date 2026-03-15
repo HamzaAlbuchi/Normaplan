@@ -42,6 +42,11 @@ const rulesJson = JSON.parse(
   readFileSync(join(__dirname, "declarative-rules.json"), "utf-8")
 ) as { version: string; rules: DeclarativeRule[] };
 
+/** Exported for API: returns rule metadata for scope/coverage page */
+export function getRulesMetadata(): { version: string; rules: DeclarativeRule[] } {
+  return rulesJson;
+}
+
 function appliesToState(rule: DeclarativeRule, state: string): boolean {
   const states = rule.applicableStates;
   if (!states || states.length === 0) return true;

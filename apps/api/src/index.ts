@@ -11,6 +11,7 @@ import { planRoutes } from "./routes/plans.js";
 import { runRoutes } from "./routes/runs.js";
 import { adminRoutes } from "./routes/admin.js";
 import { violationRoutes } from "./routes/violations.js";
+import { rulesRoutes } from "./routes/rules.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
 
@@ -41,6 +42,7 @@ async function start() {
   await app.register(runRoutes, { prefix: "/api/runs" });
   await app.register(adminRoutes, { prefix: "/api/admin" });
   await app.register(violationRoutes, { prefix: "/api/violations" });
+  await app.register(rulesRoutes, { prefix: "/api/rules" });
 
   await fs.mkdir(config.uploadDir, { recursive: true }).catch(() => {});
 

@@ -367,3 +367,32 @@ export const adminApi = {
   getUsers: () => api<AdminUser[]>("/admin/users"),
 };
 
+// Rules metadata (for Prüfumfang / scope page)
+export interface RuleCheck {
+  elementType: string;
+  property: string;
+  operator: string;
+  severity: "info" | "warning" | "error";
+  messageTemplate?: string;
+  suggestion?: string;
+}
+
+export interface RuleMetadata {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  regulationRef?: string;
+  applicableStates: string[];
+  checks: RuleCheck[];
+}
+
+export interface RulesMetadataResponse {
+  version: string;
+  rules: RuleMetadata[];
+}
+
+export const rulesApi = {
+  getMetadata: () => api<RulesMetadataResponse>("/rules"),
+};
+

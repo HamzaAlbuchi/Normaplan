@@ -10,6 +10,7 @@ import Violations from "./screens/Violations";
 import Profile from "./screens/Profile";
 import Admin from "./screens/Admin";
 import Organization from "./screens/Organization";
+import RuleScope from "./screens/RuleScope";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const token = useAuthStore((s) => s.token);
@@ -40,6 +41,7 @@ export default function App() {
         <Route path="project/:projectId" element={<Project />} />
         <Route path="plan/:planId" element={<PlanReport />} />
         <Route path="violations" element={<Violations />} />
+        <Route path="pruefumfang" element={<RuleScope />} />
         <Route path="org/:orgId" element={<Organization />} />
         <Route path="profile" element={<Profile />} />
         <Route path="admin" element={<AdminRoute><Admin /></AdminRoute>} />
