@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, plansApi, membershipsApi, type PlanSummary } from "../api/client";
 import { useAuthStore } from "../store/auth";
-import { Button, Card, CardHeader, CardContent, PageHeader } from "../components/ui";
+import { Badge, Button, Card, CardHeader, CardContent, PageHeader } from "../components/ui";
 
 const STATE_NAMES: Record<string, string> = {
   BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
@@ -11,6 +11,43 @@ const STATE_NAMES: Record<string, string> = {
   NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen",
   ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen",
 };
+
+function ProjectViolationsSummary({ projectId }: { projectId: string }) {
+  const { data: stats } = useQuery({
+    queryKey: ["project-violation-stats", projectId],
+    queryFn: () => projectsApi.getViolationStats(projectId),
+    enabled: !!projectId,
+  });
+
+  if (!stats || stats.total === 0) return null;
+
+  return (
+    <Card className="mb-8">
+      <CardHeader
+        title="Verstöße in diesem Projekt"
+        description="Mögliche Abweichungen von Bauvorschriften – prüfen und bewerten."
+      />
+      <CardContent>
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="text-sm text-slate-600">
+            <strong>{stats.total}</strong> Verstoß{stats.total !== 1 ? "e" : ""} gesamt
+          </span>
+          {stats.openCount > 0 && (
+            <Badge variant="default">{stats.openCount} offen</Badge>
+          )}
+          {stats.criticalCount > 0 && (
+            <Badge variant="critical">{stats.criticalCount} kritisch</Badge>
+          )}
+          <Button variant="secondary" size="sm" asChild>
+            <Link to={`/violations?projectId=${projectId}`}>
+              Alle Verstöße anzeigen
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 function ProjectAssignments({ projectId, organizationId }: { projectId: string; organizationId: string }) {
   const queryClient = useQueryClient();
@@ -191,6 +228,10 @@ export default function Project() {
 
       {project?.organizationId && user?.organizations?.some((o) => o.id === project.organizationId && ["owner", "manager"].includes(o.role)) && (
         <ProjectAssignments projectId={projectId!} organizationId={project.organizationId} />
+      )}
+
+      {projectId && (
+        <ProjectViolationsSummary projectId={projectId} />
       )}
 
       {canWork && (

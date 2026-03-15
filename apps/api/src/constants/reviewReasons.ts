@@ -15,9 +15,6 @@ export const DISMISS_REASONS = [
 
 export const DEFER_REASONS = [
   { value: "will_fix_later", label: "Wird später behoben" },
-  { value: "waiting_client_input", label: "Warte auf Angaben des Auftraggebers" },
-  { value: "waiting_consultant_input", label: "Warte auf Stellungnahme des Fachplaners" },
-  { value: "non_blocking_stage", label: "Für aktuelle Phase nicht relevant" },
   { value: "waiting_for_client_input", label: "Warte auf Angaben des Auftraggebers" },
   { value: "waiting_for_consultant_input", label: "Warte auf Stellungnahme des Fachplaners" },
   { value: "non_blocking_for_current_phase", label: "Für aktuelle Phase nicht relevant" },

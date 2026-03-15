@@ -8,6 +8,7 @@ import {
   canCreateProject,
   canManageProject,
   canWorkOnProject,
+  canAccessProject,
   getDefaultOrg,
 } from "../rbac.js";
 
@@ -105,6 +106,26 @@ export async function projectRoutes(app: FastifyInstance) {
       createdAt: project.createdAt.toISOString(),
       planCount: 0,
     });
+  });
+
+  app.get("/:projectId/violation-stats", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { projectId } = req.params as { projectId: string };
+    const access = await canAccessProject(user.id, projectId);
+    if (!access.ok) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+
+    const [total, openCount, criticalCount] = await Promise.all([
+      prisma.ruleViolation.count({
+        where: { run: { plan: { projectId } } },
+      }),
+      prisma.ruleViolation.count({
+        where: { run: { plan: { projectId } }, status: "open" },
+      }),
+      prisma.ruleViolation.count({
+        where: { run: { plan: { projectId } }, severity: "error" },
+      }),
+    ]);
+    return { total, openCount, criticalCount };
   });
 
   app.get("/:projectId", async (req, reply) => {

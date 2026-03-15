@@ -7,7 +7,7 @@ import { DISMISS_REASON_VALUES, DEFER_REASON_VALUES } from "../constants/reviewR
 
 const listQuery = z.object({
   status: z.string().optional(),
-  severity: z.enum(["info", "warning", "error"]).optional(),
+  severity: z.enum(["info", "warning", "error", "critical"]).optional(),
   projectId: z.string().cuid().optional(),
   ruleId: z.string().optional(),
   reviewedBy: z.string().cuid().optional(),
@@ -84,6 +84,20 @@ export async function violationRoutes(app: FastifyInstance) {
     }
   });
 
+  app.get("/rule-types", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const projectIds = await listAccessibleProjectIds(user.id);
+    if (projectIds.length === 0) return [];
+
+    const rows = await prisma.ruleViolation.findMany({
+      where: { run: { plan: { projectId: { in: projectIds } } } },
+      select: { ruleId: true, ruleName: true },
+      distinct: ["ruleId"],
+      orderBy: { ruleName: "asc" },
+    });
+    return rows.map((r) => ({ id: r.ruleId, name: r.ruleName }));
+  });
+
   app.get("/", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
     const query = listQuery.safeParse(req.query);
@@ -101,7 +115,9 @@ export async function violationRoutes(app: FastifyInstance) {
 
     const where: Record<string, unknown> = { run: runWhere };
     if (query.data.status) where.status = query.data.status;
-    if (query.data.severity) where.severity = query.data.severity;
+    if (query.data.severity) {
+      where.severity = query.data.severity === "critical" ? "error" : query.data.severity;
+    }
     if (query.data.ruleId) where.ruleId = query.data.ruleId;
     if (query.data.reviewedBy) where.decidedByUserId = query.data.reviewedBy;
 

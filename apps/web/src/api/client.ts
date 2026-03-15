@@ -159,6 +159,8 @@ export const projectsApi = {
   get: (id: string) => api<ProjectDetail>(`/projects/${id}`),
   update: (id: string, data: { name?: string; zipCode?: string | null }) =>
     api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
+  getViolationStats: (projectId: string) =>
+    api<{ total: number; openCount: number; criticalCount: number }>(`/projects/${projectId}/violation-stats`),
   listAssignments: (projectId: string) =>
     api<{ userId: string; email: string; name?: string }[]>(`/projects/${projectId}/assignments`),
   addAssignment: (projectId: string, userId: string) =>
@@ -227,17 +229,14 @@ export const DISMISS_REASONS = [
 
 export const DEFER_REASONS = [
   { value: "will_fix_later", label: "Wird später behoben" },
-  { value: "waiting_client_input", label: "Warte auf Angaben des Auftraggebers" },
-  { value: "waiting_consultant_input", label: "Warte auf Stellungnahme des Fachplaners" },
-  { value: "non_blocking_stage", label: "Für aktuelle Phase nicht relevant" },
+  { value: "waiting_for_client_input", label: "Warte auf Angaben des Auftraggebers" },
+  { value: "waiting_for_consultant_input", label: "Warte auf Stellungnahme des Fachplaners" },
+  { value: "non_blocking_for_current_phase", label: "Für aktuelle Phase nicht relevant" },
 ] as const;
 
 export const REASON_LABELS: Record<string, string> = Object.fromEntries([
   ...DISMISS_REASONS.map((r) => [r.value, r.label]),
   ...DEFER_REASONS.map((r) => [r.value, r.label]),
-  ["waiting_for_client_input", "Warte auf Angaben des Auftraggebers"],
-  ["waiting_for_consultant_input", "Warte auf Stellungnahme des Fachplaners"],
-  ["non_blocking_for_current_phase", "Für aktuelle Phase nicht relevant"],
 ]);
 
 export interface ViolationHistoryEntry {
@@ -288,7 +287,13 @@ export interface ViolationsListParams {
   offset?: number;
 }
 
+export interface RuleTypeOption {
+  id: string;
+  name: string;
+}
+
 export const violationsApi = {
+  listRuleTypes: () => api<RuleTypeOption[]>("/violations/rule-types"),
   list: (params?: ViolationsListParams) => {
     const q = new URLSearchParams();
     if (params) Object.entries(params).forEach(([k, v]) => v != null && q.set(k, String(v)));

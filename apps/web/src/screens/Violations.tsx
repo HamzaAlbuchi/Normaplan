@@ -121,6 +121,11 @@ export default function Violations() {
     queryFn: () => projectsApi.list(),
   });
 
+  const { data: ruleTypes = [] } = useQuery({
+    queryKey: ["violation-rule-types"],
+    queryFn: () => violationsApi.listRuleTypes(),
+  });
+
   const updateMutation = useMutation({
     mutationFn: ({ id, action, reason, comment }: { id: string; action: "confirm" | "dismiss" | "defer" | "resolve"; reason?: string; comment?: string }) =>
       violationsApi.update(id, { action, reason, comment }),
@@ -196,6 +201,16 @@ export default function Violations() {
           <option value="">Alle Projekte</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+        <select
+          value={filters.ruleId ?? ""}
+          onChange={(e) => { setFilters((f) => ({ ...f, ruleId: e.target.value || undefined })); setQuickView(null); }}
+          className={selectClass}
+        >
+          <option value="">Alle Regeltypen</option>
+          {ruleTypes.map((r) => (
+            <option key={r.id} value={r.id}>{r.name}</option>
           ))}
         </select>
         <select
