@@ -58,6 +58,7 @@ model Project {
   state          String
   organizationId String
   projectType    String?  // residential | commercial | mixed_use | industrial | education | healthcare | other
+  status         String   @default("ongoing") // ongoing | paused | ended
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

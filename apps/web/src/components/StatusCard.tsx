@@ -8,7 +8,7 @@ export interface ComplianceOverviewProps {
   errorCount: number;
   /** Number of warnings */
   warningCount: number;
-  /** Number of info/suggestion findings (optional) */
+  /** Number of info/suggestion findings (optional). Pass from stats.infoCount. */
   infoCount?: number;
   /** Total number of test runs */
   runCount: number;

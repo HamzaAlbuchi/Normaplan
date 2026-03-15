@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, organizationsApi, authApi, PROJECT_TYPES, type ProjectSummary, type ProjectType } from "../api/client";
+import { projectsApi, organizationsApi, authApi, PROJECT_TYPES, PROJECT_STATUSES, type ProjectSummary, type ProjectType } from "../api/client";
 import { useAuthStore } from "../store/auth";
 import { Button, Card, CardHeader, CardContent, Input, PageHeader } from "../components/ui";
 import StatusCard from "../components/StatusCard";
@@ -26,6 +26,7 @@ export default function Dashboard() {
   const [newProjectZip, setNewProjectZip] = useState("");
   const [newProjectType, setNewProjectType] = useState<ProjectType>("residential");
   const [newOrgName, setNewOrgName] = useState("");
+  const [projectStatusFilter, setProjectStatusFilter] = useState<string>("ongoing");
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
   const orgs = user?.organizations ?? [];
@@ -137,10 +138,34 @@ export default function Dashboard() {
       />
 
       <div className="mb-8">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+          <label className="text-sm font-medium text-slate-600">Projekte einbeziehen:</label>
+          <div className="flex flex-wrap gap-2">
+            {[
+              { value: "ongoing", label: "Nur laufende" },
+              { value: "ongoing,paused", label: "+ Pausierte" },
+              { value: "ongoing,paused,ended", label: "+ Abgeschlossene" },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setProjectStatusFilter(opt.value)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  projectStatusFilter === opt.value
+                    ? "bg-slate-800 text-white"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
         <StatusCard
           runCount={stats?.runCount ?? 0}
           warningCount={stats?.warningCount ?? 0}
           errorCount={stats?.errorCount ?? 0}
+          infoCount={stats?.infoCount}
           lastRunAt={stats?.lastRunAt}
           title="Prüfergebnisse"
         />
@@ -244,6 +269,12 @@ export default function Dashboard() {
                 </p>
                 <p className="mt-0.5 text-sm text-slate-500">
                   {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
+                  {p.status && p.status !== "ongoing" && (
+                    <span className="text-slate-400">
+                      {" · "}
+                      {PROJECT_STATUSES.find((s) => s.value === p.status)?.label ?? p.status}
+                    </span>
+                  )}
                   {p.projectType && (
                     <span className="text-slate-400">
                       {" · "}

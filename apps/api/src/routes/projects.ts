@@ -13,11 +13,13 @@ import {
 } from "../rbac.js";
 
 const PROJECT_TYPES = ["residential", "commercial", "mixed_use", "industrial", "education", "healthcare", "other"] as const;
+const PROJECT_STATUSES = ["ongoing", "paused", "ended"] as const;
 
 const createBody = z.object({
   name: z.string().min(1),
   zipCode: z.string().length(5).regex(/^[0-9]{5}$/),
   projectType: z.enum(PROJECT_TYPES).optional(),
+  status: z.enum(PROJECT_STATUSES).optional(),
   organizationId: z.preprocess(
     (v) => (v === "" || v === null ? undefined : v),
     z.string().cuid().optional()
@@ -27,6 +29,7 @@ const updateBody = z.object({
   name: z.string().min(1).optional(),
   zipCode: z.string().length(5).regex(/^[0-9]{5}$/).optional(),
   projectType: z.enum(PROJECT_TYPES).optional().nullable(),
+  status: z.enum(PROJECT_STATUSES).optional(),
 });
 const assignBody = z.object({ userId: z.string().cuid() });
 
@@ -43,17 +46,66 @@ export async function projectRoutes(app: FastifyInstance) {
 
   app.get("/stats", async (req) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const query = req.query as { projectStatus?: string };
+    const statuses = query.projectStatus
+      ? query.projectStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["ongoing"];
+
     const projectIds = await listAccessibleProjectIds(user.id);
     const runs = await prisma.ruleRun.findMany({
-      where: { plan: { projectId: { in: projectIds } } },
-      select: { warningCount: true, errorCount: true, checkedAt: true },
+      where: {
+        plan: {
+          projectId: { in: projectIds },
+          project: { status: { in: statuses } },
+        },
+      },
+      select: { id: true, checkedAt: true },
       orderBy: { checkedAt: "desc" },
     });
     const lastRun = runs[0];
+    const runIds = runs.map((r) => r.id);
+
+    if (runIds.length === 0) {
+      return {
+        runCount: 0,
+        warningCount: 0,
+        errorCount: 0,
+        infoCount: 0,
+        lastRunAt: null,
+      };
+    }
+
+    // Count violations from RuleViolation (exclude dismissed/resolved)
+    const activeStatuses = ["open", "confirmed", "deferred"];
+    const [errorCount, warningCount, infoCount] = await Promise.all([
+      prisma.ruleViolation.count({
+        where: {
+          runId: { in: runIds },
+          status: { in: activeStatuses },
+          severity: "error",
+        },
+      }),
+      prisma.ruleViolation.count({
+        where: {
+          runId: { in: runIds },
+          status: { in: activeStatuses },
+          severity: "warning",
+        },
+      }),
+      prisma.ruleViolation.count({
+        where: {
+          runId: { in: runIds },
+          status: { in: activeStatuses },
+          severity: "info",
+        },
+      }),
+    ]);
+
     return {
       runCount: runs.length,
-      warningCount: runs.reduce((s, r) => s + r.warningCount, 0),
-      errorCount: runs.reduce((s, r) => s + r.errorCount, 0),
+      warningCount,
+      errorCount,
+      infoCount,
       lastRunAt: lastRun?.checkedAt?.toISOString() ?? null,
     };
   });
@@ -78,6 +130,7 @@ export async function projectRoutes(app: FastifyInstance) {
       state: p.state,
       organizationId: p.organizationId,
       projectType: p.projectType,
+      status: p.status,
       createdAt: p.createdAt.toISOString(),
       planCount: p._count.plans,
       architects: p.assignments.map((a) => ({ id: a.user.id, email: a.user.email, name: a.user.name })),
@@ -111,6 +164,7 @@ export async function projectRoutes(app: FastifyInstance) {
         zipCode,
         state,
         projectType: body.data.projectType ?? null,
+        status: body.data.status ?? "ongoing",
       },
       include: { _count: { select: { plans: true } } },
     });
@@ -121,6 +175,7 @@ export async function projectRoutes(app: FastifyInstance) {
       state: project.state,
       organizationId: project.organizationId,
       projectType: project.projectType,
+      status: project.status,
       createdAt: project.createdAt.toISOString(),
       planCount: 0,
     });
@@ -168,6 +223,7 @@ export async function projectRoutes(app: FastifyInstance) {
       state: project.state,
       organizationId: project.organizationId,
       projectType: project.projectType,
+      status: project.status,
       organizationName: project.organization.name,
       createdAt: project.createdAt.toISOString(),
       planCount: project._count.plans,
@@ -197,6 +253,8 @@ export async function projectRoutes(app: FastifyInstance) {
       data: {
         ...(body.data.name !== undefined && { name: body.data.name }),
         ...(body.data.zipCode !== undefined && { zipCode, state }),
+        ...(body.data.projectType !== undefined && { projectType: body.data.projectType }),
+        ...(body.data.status !== undefined && { status: body.data.status }),
       },
       include: { _count: { select: { plans: true } } },
     });
@@ -207,6 +265,7 @@ export async function projectRoutes(app: FastifyInstance) {
       state: updated.state,
       organizationId: updated.organizationId,
       projectType: updated.projectType,
+      status: updated.status,
       createdAt: updated.createdAt.toISOString(),
       planCount: updated._count.plans,
     };

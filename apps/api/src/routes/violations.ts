@@ -9,6 +9,7 @@ const listQuery = z.object({
   status: z.string().optional(),
   severity: z.enum(["info", "warning", "error", "critical"]).optional(),
   projectId: z.string().cuid().optional(),
+  projectStatus: z.string().optional(), // comma-sep: ongoing, paused, ended. default ongoing
   ruleId: z.string().optional(),
   reviewedBy: z.string().cuid().optional(),
   sort: z.enum(["detectedAt", "updatedAt"]).optional().default("detectedAt"),
@@ -106,9 +107,14 @@ export async function violationRoutes(app: FastifyInstance) {
     const projectIds = await listAccessibleProjectIds(user.id);
     if (projectIds.length === 0) return { items: [], total: 0 };
 
-    const runWhere: { plan: { projectId: unknown } } = {
-      plan: { projectId: query.data.projectId ? query.data.projectId : { in: projectIds } },
-    };
+    const statuses = query.data.projectStatus
+      ? query.data.projectStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["ongoing"];
+
+    const runWhere: Record<string, unknown> = query.data.projectId
+      ? { plan: { projectId: query.data.projectId } }
+      : { plan: { project: { id: { in: projectIds }, status: { in: statuses } } } };
+
     if (query.data.projectId && !projectIds.includes(query.data.projectId)) {
       return { items: [], total: 0 };
     }

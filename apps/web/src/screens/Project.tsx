@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, plansApi, membershipsApi, PROJECT_TYPES, type PlanSummary } from "../api/client";
+import { projectsApi, plansApi, membershipsApi, PROJECT_TYPES, PROJECT_STATUSES, type PlanSummary, type ProjectStatus } from "../api/client";
 import { useAuthStore } from "../store/auth";
 import { Badge, Button, Card, CardHeader, CardContent, PageHeader } from "../components/ui";
 
@@ -166,6 +166,15 @@ export default function Project() {
     },
   });
 
+  const updateStatusMutation = useMutation({
+    mutationFn: (status: ProjectStatus) => projectsApi.update(projectId!, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["project", projectId] });
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
+    },
+  });
+
   const handleDeletePlan = (plan: PlanSummary, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -208,6 +217,26 @@ export default function Project() {
             {project?.projectType && (
               <span className="block text-slate-500">
                 Projekttyp: {PROJECT_TYPES.find((t) => t.value === project.projectType)?.label ?? project.projectType}
+              </span>
+            )}
+            {canEdit && project?.organizationId && (
+              <span className="block text-slate-500">
+                Status:{" "}
+                <select
+                  value={project.status ?? "ongoing"}
+                  onChange={(e) => updateStatusMutation.mutate(e.target.value as ProjectStatus)}
+                  disabled={updateStatusMutation.isPending}
+                  className="ml-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {PROJECT_STATUSES.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+              </span>
+            )}
+            {!canEdit && project?.status && project.status !== "ongoing" && (
+              <span className="block text-slate-500">
+                Status: {PROJECT_STATUSES.find((s) => s.value === project.status)?.label ?? project.status}
               </span>
             )}
             {project?.zipCode && (

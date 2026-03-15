@@ -203,6 +203,18 @@ export default function Violations() {
             <option key={p.id} value={p.id}>{p.name}</option>
           ))}
         </select>
+        {!filters.projectId && (
+          <select
+            value={filters.projectStatus ?? "ongoing"}
+            onChange={(e) => { setFilters((f) => ({ ...f, projectStatus: e.target.value || undefined })); setQuickView(null); }}
+            className={selectClass}
+            title="Projekte einbeziehen"
+          >
+            <option value="ongoing">Nur laufende Projekte</option>
+            <option value="ongoing,paused">+ Pausierte</option>
+            <option value="ongoing,paused,ended">+ Abgeschlossene</option>
+          </select>
+        )}
         <select
           value={filters.ruleId ?? ""}
           onChange={(e) => { setFilters((f) => ({ ...f, ruleId: e.target.value || undefined })); setQuickView(null); }}

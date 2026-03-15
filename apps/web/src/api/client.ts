@@ -149,6 +149,7 @@ export interface ProjectSummary {
   state?: string;
   organizationId?: string;
   projectType?: ProjectType | null;
+  status?: ProjectStatus;
   createdAt: string;
   planCount: number;
   architects?: { id: string; email: string; name?: string }[];
@@ -158,8 +159,17 @@ export interface DashboardStats {
   runCount: number;
   warningCount: number;
   errorCount: number;
+  infoCount?: number;
   lastRunAt?: string | null;
 }
+
+export const PROJECT_STATUSES = [
+  { value: "ongoing", label: "Laufend" },
+  { value: "paused", label: "Pausiert" },
+  { value: "ended", label: "Abgeschlossen" },
+] as const;
+
+export type ProjectStatus = (typeof PROJECT_STATUSES)[number]["value"];
 
 export interface ProjectDetail extends ProjectSummary {
   organizationName?: string;
@@ -179,7 +189,7 @@ export const projectsApi = {
       },
     }),
   get: (id: string) => api<ProjectDetail>(`/projects/${id}`),
-  update: (id: string, data: { name?: string; zipCode?: string | null; projectType?: ProjectType | null }) =>
+  update: (id: string, data: { name?: string; zipCode?: string | null; projectType?: ProjectType | null; status?: ProjectStatus }) =>
     api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
   getViolationStats: (projectId: string) =>
     api<{ total: number; openCount: number; criticalCount: number }>(`/projects/${projectId}/violation-stats`),
@@ -301,6 +311,7 @@ export interface ViolationsListParams {
   status?: string;
   severity?: string;
   projectId?: string;
+  projectStatus?: string; // comma-sep: ongoing,paused,ended
   ruleId?: string;
   reviewedBy?: string;
   sort?: "detectedAt" | "updatedAt";
