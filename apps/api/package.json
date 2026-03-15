@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
+    "build": "tsc && node -e \"require('fs').mkdirSync('dist/rules',{recursive:true}); require('fs').copyFileSync('src/rules/declarative-rules.json','dist/rules/declarative-rules.json')\"",
     "start": "node dist/index.js",
     "start:prod": "prisma migrate deploy && node dist/index.js",
     "lint": "tsc --noEmit",

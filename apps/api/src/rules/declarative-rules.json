@@ -1,0 +1,1040 @@
+{
+  "version": "1",
+  "rules": [
+    {
+      "id": "corridor_width",
+      "name": "Mindestbreite Flur / Rettungsweg",
+      "description": "Flure und Rettungswege müssen eine Mindestbreite einhalten.",
+      "category": "escape",
+      "regulationRef": "MBO §33, DIN 18065",
+      "applicableStates": ["BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH"],
+      "checks": [
+        {
+          "elementType": "corridors",
+          "property": "widthM",
+          "operator": "<",
+          "threshold": 1.2,
+          "severity": "error",
+          "messageTemplate": "Mögliche Unterschreitung: Flur \"{{id}}\" hat Breite {{actual}}m. Mindestbreite: {{required}}m.",
+          "suggestion": "Flurbreite auf mindestens 1.2m vergrößern.",
+          "requiredValue": 1.2
+        }
+      ]
+    },
+    {
+      "id": "room_height_living",
+      "name": "Lichte Raumhöhe Aufenthaltsräume",
+      "description": "Mindesthöhe für Aufenthaltsräume in Wohngebäuden.",
+      "category": "geometry",
+      "regulationRef": "MBO §47",
+      "applicableStates": ["BW", "BY", "BE", "BB", "HB", "HH", "HE", "MV", "NI", "NW", "RP", "SL", "SN", "ST", "SH", "TH"],
+      "checks": [
+        {
+          "elementType": "rooms",
+          "property": "heightM",
+          "operator": "<",
+          "threshold": 2.4,
+          "severity": "error",
+          "messageTemplate": "Raum \"{{id}}\": Lichte Höhe {{actual}}m ist zu gering.",
+          "suggestion": "Raumhöhe auf mindestens 2.40m erhöhen (Landesrecht prüfen, oft 2.50m in Berlin).",
+          "requiredValue": 2.4
+        }
+      ]
+    },
+    {
+      "id": "rescue_window_size",
+      "name": "Notausstieg / Rettungsfenster",
+      "description": "Fenster als zweiter Rettungsweg müssen eine Mindestgröße aufweisen.",
+      "category": "escape",
+      "regulationRef": "MBO §37",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "windows",
+          "property": "clearOpeningWidthM",
+          "operator": "<",
+          "threshold": 0.9,
+          "severity": "error",
+          "messageTemplate": "Rettungsfenster Breite {{actual}}m unterschreitet 0.90m.",
+          "suggestion": "Fensterflügel vergrößern.",
+          "requiredValue": 0.9
+        },
+        {
+          "elementType": "windows",
+          "property": "clearOpeningHeightM",
+          "operator": "<",
+          "threshold": 1.2,
+          "severity": "error",
+          "messageTemplate": "Rettungsfenster Höhe {{actual}}m unterschreitet 1.20m.",
+          "suggestion": "Fensterhöhe anpassen.",
+          "requiredValue": 1.2
+        }
+      ]
+    },
+    {
+      "id": "window_area_ratio",
+      "name": "Belichtung (Fensterflächenanteil)",
+      "description": "Aufenthaltsräume benötigen ausreichend Tageslicht.",
+      "category": "geometry",
+      "regulationRef": "MBO §47 / LBOs",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "rooms",
+          "property": "windowAreaToFloorRatio",
+          "operator": "<",
+          "threshold": 0.125,
+          "severity": "warning",
+          "messageTemplate": "Fensterfläche in \"{{id}}\" beträgt nur {{actual}}% der Grundfläche. 12.5% (1/8) empfohlen.",
+          "suggestion": "Fensterfläche vergrößern oder Belichtung nachweisen.",
+          "requiredValue": 0.125
+        }
+      ]
+    },
+    {
+      "id": "bathroom_ventilation",
+      "name": "Lüftung fensterlose Bäder",
+      "description": "Bäder ohne Fenster benötigen eine mechanische Entlüftung.",
+      "category": "geometry",
+      "regulationRef": "DIN 18017-3",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "rooms",
+          "property": "hasWindow",
+          "operator": "==",
+          "threshold": false,
+          "severity": "info",
+          "messageTemplate": "Fensterloses Bad erkannt. Mechanische Lüftung nach DIN 18017-3 erforderlich.",
+          "suggestion": "Lüftungsanlage/Schacht einplanen.",
+          "requiredValue": true,
+          "filter": { "roomType": "bathroom" }
+        }
+      ]
+    },
+    {
+      "id": "door_width_accessible",
+      "name": "Barrierefreie Türbreite",
+      "description": "Lichte Durchgangsbreite für Rollstuhlnutzung.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "doors",
+          "property": "clearWidthM",
+          "operator": "<",
+          "threshold": 0.9,
+          "severity": "warning",
+          "messageTemplate": "Tür \"{{id}}\": Breite {{actual}}m. Für Barrierefreiheit (R) sind 0.90m nötig.",
+          "suggestion": "Türbreite auf 90cm lichte Weite erhöhen.",
+          "requiredValue": 0.9
+        }
+      ]
+    },
+    {
+      "id": "turning_circle_bathroom",
+      "name": "Bewegungsfläche Bad",
+      "description": "Platzbedarf für Rollstuhl im Sanitärraum.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "rooms",
+          "property": "maneuveringSpaceDiameterM",
+          "operator": "<",
+          "threshold": 1.2,
+          "severity": "error",
+          "messageTemplate": "Wendekreis im Bad {{actual}}m unterschreitet Standard-Anforderung (1.20m).",
+          "suggestion": "Sanitärobjekte umplanen für 1.20m (oder 1.50m für Rollstuhl).",
+          "requiredValue": 1.2,
+          "filter": { "roomType": "bathroom" }
+        }
+      ]
+    },
+    {
+      "id": "stair_tread_ratio",
+      "name": "Treppensteigungsverhältnis",
+      "description": "Sicherheit und Bequemlichkeit von Treppen.",
+      "category": "geometry",
+      "regulationRef": "DIN 18065",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "stairs",
+          "property": "stepFormulaValue",
+          "operator": "not_between",
+          "threshold": [0.59, 0.65],
+          "severity": "error",
+          "messageTemplate": "Schrittmaß (2s+a) ist {{actual}}m. Normbereich 0.59m - 0.65m.",
+          "suggestion": "Steigung (s) oder Auftritt (a) anpassen.",
+          "requiredValue": 0.63
+        }
+      ]
+    },
+    {
+      "id": "balcony_railing_height",
+      "name": "Umwehrungshöhe Balkon",
+      "description": "Absturzsicherung für Balkone und Galerien.",
+      "category": "safety",
+      "regulationRef": "MBO §38",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "railings",
+          "property": "heightM",
+          "operator": "<",
+          "threshold": 0.9,
+          "severity": "error",
+          "messageTemplate": "Geländerhöhe {{actual}}m zu niedrig (bis 12m Absturzhöhe min 0.90m).",
+          "suggestion": "Geländer auf mindestens 0.90m (über 12m: 1.10m) erhöhen.",
+          "requiredValue": 0.9
+        }
+      ]
+    },
+    {
+      "id": "fire_door_boiler_room",
+      "name": "Brandschutztür Heizraum",
+      "description": "Türen zu Heizräumen müssen feuerhemmend sein.",
+      "category": "fire",
+      "regulationRef": "FeuV",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "doors",
+          "property": "fireRating",
+          "operator": "!=",
+          "threshold": "T30",
+          "severity": "error",
+          "messageTemplate": "Tür zu Heizraum benötigt T30 Qualität.",
+          "suggestion": "Türspezifikation auf T30 ändern.",
+          "requiredValue": "T30",
+          "filter": { "leadsToBoilerRoom": true }
+        }
+      ]
+    },
+    {
+      "id": "dead_end_corridor",
+      "name": "Stichflur Max-Länge",
+      "description": "Sackgassen in Fluren (Stichflure) dürfen nur eine begrenzte Länge haben.",
+      "category": "escape",
+      "regulationRef": "MBO §33 (3)",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "corridors",
+          "property": "deadEndLengthM",
+          "operator": ">",
+          "threshold": 15,
+          "severity": "error",
+          "messageTemplate": "Stichflur \"{{id}}\" ist {{actual}}m lang. Maximal zulässig: 15m.",
+          "suggestion": "Zweiten Rettungsweg vorsehen oder Flur einkürzen.",
+          "requiredValue": 15
+        }
+      ]
+    },
+    {
+      "id": "fire_wall_distance",
+      "name": "Abstand Brandwand / Grundstücksgrenze",
+      "description": "Gebäudeabschlusswände müssen als Brandwände ausgeführt werden, wenn der Grenzabstand unterschritten wird.",
+      "category": "fire",
+      "regulationRef": "MBO §30",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "walls",
+          "property": "distanceToBoundaryM",
+          "operator": "<",
+          "threshold": 2.5,
+          "severity": "warning",
+          "messageTemplate": "Wand an Achse {{id}} hat nur {{actual}}m Grenzabstand. Brandwand (F90-A) erforderlich.",
+          "suggestion": "Wand als Brandwand deklarieren oder Grenzabstand vergrößern.",
+          "requiredValue": 2.5
+        }
+      ]
+    },
+    {
+      "id": "stair_headroom",
+      "name": "Durchgangshöhe Treppe",
+      "description": "Lichte Durchgangshöhe von Treppenläufen.",
+      "category": "geometry",
+      "regulationRef": "DIN 18065",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "stairs",
+          "property": "headroomM",
+          "operator": "<",
+          "threshold": 2.0,
+          "severity": "error",
+          "messageTemplate": "Lichte Höhe der Treppe {{id}} beträgt {{actual}}m. Minimum: 2.00m.",
+          "suggestion": "Deckenöffnung vergrößern oder Treppensteigung anpassen.",
+          "requiredValue": 2.0
+        }
+      ]
+    },
+    {
+      "id": "smoke_extraction_stairwell",
+      "name": "Rauchabzug Treppenraum",
+      "description": "Notwendige Treppenräume müssen eine Öffnung zur Rauchableitung haben.",
+      "category": "fire",
+      "regulationRef": "MBO §35",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "stairwells",
+          "property": "smokeVentAreaM2",
+          "operator": "<",
+          "threshold": 1.0,
+          "severity": "error",
+          "messageTemplate": "Rauchabzugsfläche im Treppenhaus {{actual}}m² ist zu klein. Minimum: 1.00m².",
+          "suggestion": "RWA-Fenster oder Dachkuppel vergrößern.",
+          "requiredValue": 1.0
+        }
+      ]
+    },
+    {
+      "id": "apartment_entrance_fire_rating",
+      "name": "Wohnungseingangstür Qualität",
+      "description": "Türen zwischen Wohnungen und notwendigen Fluren müssen dichtschließend sein.",
+      "category": "fire",
+      "regulationRef": "MBO §35 (6)",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "doors",
+          "property": "smokeTightness",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Wohnungseingangstür {{id}} muss 'dicht- und selbstschließend' sein.",
+          "suggestion": "Türspezifikation auf RS (Rauchschutz) / T30 prüfen.",
+          "requiredValue": true,
+          "filter": { "isApartmentEntrance": true }
+        }
+      ]
+    },
+    {
+      "id": "handrail_continuity",
+      "name": "Handlauf-Fortführung",
+      "description": "Handläufe müssen sicher greifbar und durchgehend sein.",
+      "category": "safety",
+      "regulationRef": "DIN 18065",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "handrails",
+          "property": "isContinuous",
+          "operator": "==",
+          "threshold": false,
+          "severity": "warning",
+          "messageTemplate": "Handlauf an Treppe {{id}} ist nicht durchlaufend ausgeführt.",
+          "suggestion": "Handlauf über Podeste hinweg durchführen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "basement_stair_separation",
+      "name": "Treppenraumtrennung Keller",
+      "description": "Treppenräume vom Keller müssen zum EG hin brandschutztechnisch getrennt sein.",
+      "category": "fire",
+      "regulationRef": "MBO §35",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "stairwells",
+          "property": "hasBasementSeparationDoor",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Kellertreppe benötigt Brandschutztür (T30) zum restlichen Treppenraum.",
+          "suggestion": "T30-Tür im UG-Zugang einplanen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "landing_depth",
+      "name": "Podesttiefe Treppe",
+      "description": "Zwischenpodeste müssen eine Mindesttiefe in Abhängigkeit der Laufbreite haben.",
+      "category": "geometry",
+      "regulationRef": "DIN 18065",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "stair_landings",
+          "property": "depthM",
+          "operator": "<",
+          "threshold": 0,
+          "thresholdProperty": "stairWidthM",
+          "severity": "error",
+          "messageTemplate": "Podesttiefe {{actual}}m unterschreitet Laufbreite {{required}}m.",
+          "suggestion": "Podesttiefe an die Treppenlaufbreite anpassen.",
+          "requiredValueProperty": "stairWidthM"
+        }
+      ]
+    },
+    {
+      "id": "emergency_light_requirement",
+      "name": "Notbeleuchtung Hochhaus/Großgarage",
+      "description": "Bestimmte Gebäudetypen benötigen eine Sicherheitsbeleuchtung.",
+      "category": "safety",
+      "regulationRef": "VStättVO / GaVO",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "building",
+          "property": "isHighRise",
+          "operator": "==",
+          "threshold": true,
+          "severity": "info",
+          "messageTemplate": "Hochhaus erkannt: Sicherheitsbeleuchtung für Rettungswege zwingend.",
+          "suggestion": "Sicherheitsbeleuchtung in Elektroplanung aufnehmen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "fire_truck_access",
+      "name": "Feuerwehrzufahrt Breite",
+      "description": "Zufahrten für die Feuerwehr müssen eine Mindestbreite aufweisen.",
+      "category": "escape",
+      "regulationRef": "MBO §5 / DIN 14090",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "access_roads",
+          "property": "widthM",
+          "operator": "<",
+          "threshold": 3.0,
+          "severity": "error",
+          "messageTemplate": "Feuerwehrzufahrt ist mit {{actual}}m zu schmal. Minimum: 3.00m.",
+          "suggestion": "Zufahrtsbreite erhöhen.",
+          "requiredValue": 3.0
+        }
+      ]
+    },
+    {
+      "id": "storage_space_min",
+      "name": "Mindest-Abstellfläche pro Wohnung",
+      "description": "Jede Wohnung muss über einen Abstellraum verfügen.",
+      "category": "geometry",
+      "regulationRef": "LBOs (z.B. BauO NRW §48)",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "apartments",
+          "property": "storageAreaM2",
+          "operator": "<",
+          "threshold": 6.0,
+          "severity": "warning",
+          "messageTemplate": "Gesamt-Abstellfläche (Wohnung + Keller) beträgt {{actual}}m². Empfohlen: 6.0m².",
+          "suggestion": "Prüfen, ob Kellerersatzraum oder Abstellkammer vergrößert werden kann.",
+          "requiredValue": 6.0
+        }
+      ]
+    },
+    {
+      "id": "kitchen_ventilation",
+      "name": "Küchenlüftung / Außenfenster",
+      "description": "Küchen und Kochnischen müssen lüftbar sein.",
+      "category": "geometry",
+      "regulationRef": "MBO §47",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "kitchens",
+          "property": "hasNaturalVentilation",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Küche ohne Fenster erkannt. Mechanische Entlüftung nach DIN 18017-3 zwingend.",
+          "suggestion": "Dunstabzug oder Lüftungsanlage mit Außenfortluft planen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "bathroom_wall_tiles",
+      "name": "Spritzwasserschutz Bad",
+      "description": "Sanitärwände benötigen einen Schutz gegen Feuchtigkeit.",
+      "category": "geometry",
+      "regulationRef": "DIN 18534",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "showers",
+          "property": "waterproofingHeightM",
+          "operator": "<",
+          "threshold": 2.0,
+          "severity": "info",
+          "messageTemplate": "Abdichtung im Duschbereich sollte min. 2.00m hoch sein.",
+          "suggestion": "In Fliesenspiegel oder Leistungsverzeichnis prüfen.",
+          "requiredValue": 2.0
+        }
+      ]
+    },
+    {
+      "id": "slope_room_height_calc",
+      "name": "Anrechnung Wohnfläche unter Dachschrägen",
+      "description": "Flächen unter Schrägen zählen erst ab einer gewissen Höhe voll zur Wohnfläche.",
+      "category": "geometry",
+      "regulationRef": "WoFlV §2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "rooms",
+          "property": "heightUnder1M",
+          "operator": ">",
+          "threshold": 0,
+          "severity": "info",
+          "messageTemplate": "Fläche unter 1m Höhe wird mit 0% zur Wohnfläche angerechnet.",
+          "suggestion": "Wohnflächenberechnung gemäß WoFlV korrigieren.",
+          "requiredValue": 0
+        },
+        {
+          "elementType": "rooms",
+          "property": "height1to2M",
+          "operator": ">",
+          "threshold": 0,
+          "severity": "info",
+          "messageTemplate": "Fläche zwischen 1m und 2m Höhe wird nur zu 50% angerechnet.",
+          "suggestion": "Flächenbilanz prüfen.",
+          "requiredValue": 0.5
+        }
+      ]
+    },
+    {
+      "id": "entrance_protection",
+      "name": "Witterungsschutz Eingang",
+      "description": "Hauseingänge sollten vor Witterung geschützt sein.",
+      "category": "geometry",
+      "regulationRef": "Empfehlung / DIN 18040",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "entrances",
+          "property": "hasCanopy",
+          "operator": "==",
+          "threshold": false,
+          "severity": "warning",
+          "messageTemplate": "Hauseingang ohne Überdachung erkannt.",
+          "suggestion": "Vordach oder Rücksprung (Nische) einplanen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "balcony_threshold_height",
+      "name": "Schwellenhöhe Balkon",
+      "description": "Vermeidung von Wassereintritt bei Balkontüren.",
+      "category": "safety",
+      "regulationRef": "Flachdachrichtlinie / DIN 18531",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "balcony_doors",
+          "property": "thresholdHeightM",
+          "operator": "<",
+          "threshold": 0.15,
+          "severity": "warning",
+          "messageTemplate": "Schwelle {{actual}}m unter Standard (15cm). Entwässerungsrinne erforderlich.",
+          "suggestion": "Barrierefreie Schwelle (<2cm) benötigt Sonderdetails für Entwässerung.",
+          "requiredValue": 0.15
+        }
+      ]
+    },
+    {
+      "id": "bicycle_parking_count",
+      "name": "Fahrradstellplätze Soll",
+      "description": "Anzahl erforderlicher Fahrradstellplätze je Wohneinheit.",
+      "category": "planning",
+      "regulationRef": "LBO / Kommunale Satzung",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "building",
+          "property": "bicycleSpotsPerUnit",
+          "operator": "<",
+          "threshold": 2.0,
+          "severity": "warning",
+          "messageTemplate": "Nur {{actual}} Radstellplätze pro WE vorhanden. Satzung fordert oft 2.0.",
+          "suggestion": "Fahrradraum vergrößern oder Außenbügel vorsehen.",
+          "requiredValue": 2.0
+        }
+      ]
+    },
+    {
+      "id": "trash_area_ventilation",
+      "name": "Lüftung Müllraum",
+      "description": "Innenliegende Müllräume müssen mechanisch belüftet sein.",
+      "category": "geometry",
+      "regulationRef": "BauO",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "trash_rooms",
+          "property": "isMechanicallyVentilated",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Müllraum ohne Fenster/Lüftung erkannt.",
+          "suggestion": "Lüftungsanlage zur Geruchsvermeidung einplanen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "lift_cabin_size",
+      "name": "Aufzug Fahrkorbmaß",
+      "description": "Mindestmaße für Personenaufzüge (Barrierefreiheit).",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2 / DIN EN 81-70",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "lifts",
+          "property": "cabinWidthM",
+          "operator": "<",
+          "threshold": 1.1,
+          "severity": "error",
+          "messageTemplate": "Fahrkorbbreite {{actual}}m unterschreitet 1.10m.",
+          "suggestion": "Größeren Aufzugstyp wählen.",
+          "requiredValue": 1.1
+        },
+        {
+          "elementType": "lifts",
+          "property": "cabinDepthM",
+          "operator": "<",
+          "threshold": 1.4,
+          "severity": "error",
+          "messageTemplate": "Fahrkorbtiefe {{actual}}m unterschreitet 1.40m.",
+          "suggestion": "Schachtmaße prüfen.",
+          "requiredValue": 1.4
+        }
+      ]
+    },
+    {
+      "id": "lift_waiting_area",
+      "name": "Bewegungsfläche vor Aufzug",
+      "description": "Platzbedarf vor dem Aufzugszugang.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "lift_foyers",
+          "property": "depthM",
+          "operator": "<",
+          "threshold": 1.5,
+          "severity": "error",
+          "messageTemplate": "Flur vor Aufzug ist nur {{actual}}m tief. 1.50m für Rollstuhl erforderlich.",
+          "suggestion": "Flurbreite im Foyerbereich anpassen.",
+          "requiredValue": 1.5
+        }
+      ]
+    },
+    {
+      "id": "acc_door_handle_height",
+      "name": "Greifhöhe Türdrücker",
+      "description": "Bedienungshöhe für Türgriffe in barrierefreien Wohnungen.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "doors",
+          "property": "handleHeightM",
+          "operator": "not_between",
+          "threshold": [0.85, 1.05],
+          "severity": "warning",
+          "messageTemplate": "Türgriffhöhe {{actual}}m außerhalb des Normbereichs (0.85m - 1.05m).",
+          "suggestion": "Drückerhöhe auf 85cm (Standard Barrierefrei) oder 105cm (Standard) setzen.",
+          "requiredValue": 0.85
+        }
+      ]
+    },
+    {
+      "id": "acc_threshold_height",
+      "name": "Barrierefreie Türschwelle",
+      "description": "Schwellen an Eingängen und Balkonen müssen minimiert werden.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "thresholds",
+          "property": "heightM",
+          "operator": ">",
+          "threshold": 0.02,
+          "severity": "error",
+          "messageTemplate": "Schwelle {{actual}}m überschreitet zulässige 2cm für Barrierefreiheit.",
+          "suggestion": "Nullschwelle oder flache Rampe einplanen.",
+          "requiredValue": 0.02
+        }
+      ]
+    },
+    {
+      "id": "acc_corridor_turning_space",
+      "name": "Wendefläche im Flur",
+      "description": "Flure benötigen Flächen zum Wenden mit dem Rollstuhl.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "corridors",
+          "property": "turningCircleM",
+          "operator": "<",
+          "threshold": 1.5,
+          "severity": "warning",
+          "messageTemplate": "Wendekreis {{actual}}m im Flur zu klein. 1.50m für Rollstuhleignung (R) nötig.",
+          "suggestion": "Flur an einer Stelle auf 1.50m x 1.50m aufweiten.",
+          "requiredValue": 1.5
+        }
+      ]
+    },
+    {
+      "id": "acc_shower_size",
+      "name": "Größe barrierefreie Dusche",
+      "description": "Mindestmaß für rollstuhlgerechte Duschplätze.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "showers",
+          "property": "areaM2",
+          "operator": "<",
+          "threshold": 1.44,
+          "severity": "warning",
+          "messageTemplate": "Duschfläche {{actual}}m² zu klein. 1.20m x 1.20m (1.44m²) für barrierefrei erforderlich.",
+          "suggestion": "Duschbereich vergrößern und bodengleich ausführen.",
+          "requiredValue": 1.44
+        }
+      ]
+    },
+    {
+      "id": "acc_wc_distance_wall",
+      "name": "Seitlicher Abstand WC",
+      "description": "Abstand des WCs zur Wand für das Umsetzen vom Rollstuhl.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "toilets",
+          "property": "sideClearanceLeftOrRightM",
+          "operator": "<",
+          "threshold": 0.9,
+          "severity": "warning",
+          "messageTemplate": "Seitlicher Abstand zum WC beträgt {{actual}}m. 90cm für seitliches Umsetzen erforderlich.",
+          "suggestion": "WC-Position im Bad anpassen.",
+          "requiredValue": 0.9
+        }
+      ]
+    },
+    {
+      "id": "acc_washbasin_legroom",
+      "name": "Beinfreiheit Waschbecken",
+      "description": "Waschbecken müssen unterfahrbar sein.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "washbasins",
+          "property": "isUnderpassable",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Waschbecken in barrierefreiem Bad nicht unterfahrbar.",
+          "suggestion": "Flachaufputz-Siphon oder Unterputz-Siphon einplanen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "acc_ramp_slope",
+      "name": "Rampenneigung Max.",
+      "description": "Maximale Steigung für Rollstuhlrampen ohne Quergefälle.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "ramps",
+          "property": "slopePercent",
+          "operator": ">",
+          "threshold": 6.0,
+          "severity": "error",
+          "messageTemplate": "Rampenneigung {{actual}}% zu steil. Maximal 6% zulässig.",
+          "suggestion": "Rampenlänge erhöhen oder Podest einfügen.",
+          "requiredValue": 6.0
+        }
+      ]
+    },
+    {
+      "id": "acc_ramp_landing_length",
+      "name": "Zwischenpodest Rampen",
+      "description": "Nach 6m Rampenlänge ist ein Zwischenpodest erforderlich.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "ramps",
+          "property": "lengthBetweenLandingsM",
+          "operator": ">",
+          "threshold": 6.0,
+          "severity": "error",
+          "messageTemplate": "Rampenlauf von {{actual}}m zu lang ohne Podest.",
+          "suggestion": "Zwischenpodest von min. 1.50m Länge einplanen.",
+          "requiredValue": 6.0
+        }
+      ]
+    },
+    {
+      "id": "acc_balcony_depth",
+      "name": "Balkontiefe Barrierefrei",
+      "description": "Mindesttiefe für die Nutzung des Balkons mit dem Rollstuhl.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "balconies",
+          "property": "depthM",
+          "operator": "<",
+          "threshold": 1.5,
+          "severity": "warning",
+          "messageTemplate": "Balkontiefe {{actual}}m unterschreitet Wendekreis-Maß (1.50m).",
+          "suggestion": "Balkonplatte auf 1.50m Tiefe vergrößern.",
+          "requiredValue": 1.5
+        }
+      ]
+    },
+    {
+      "id": "acc_kitchen_aisle_width",
+      "name": "Küchenzeile Abstand",
+      "description": "Abstand zwischen Küchenzeilen für Rollstuhlnutzung.",
+      "category": "accessibility",
+      "regulationRef": "DIN 18040-2",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "kitchens",
+          "property": "aisleWidthM",
+          "operator": "<",
+          "threshold": 1.2,
+          "severity": "warning",
+          "messageTemplate": "Zeilenabstand Küche {{actual}}m zu gering. 1.20m (1.50m für R) empfohlen.",
+          "suggestion": "Küchenlayout verbreitern.",
+          "requiredValue": 1.2
+        }
+      ]
+    },
+    {
+      "id": "plan_grz_limit",
+      "name": "Grundflächenzahl (GRZ) Prüfung",
+      "description": "Prüft, ob die bebaute Fläche den Bebauungsplan einhält.",
+      "category": "planning",
+      "regulationRef": "BauNVO §19",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "site",
+          "property": "calculatedGRZ",
+          "operator": ">",
+          "thresholdProperty": "bPlanGRZ",
+          "severity": "error",
+          "messageTemplate": "Zulässige Grundfläche überschritten: IST {{actual}} > SOLL {{required}}.",
+          "suggestion": "Grundfläche des Gebäudes oder der Nebenanlagen reduzieren.",
+          "requiredValueProperty": "bPlanGRZ"
+        }
+      ]
+    },
+    {
+      "id": "plan_gfz_limit",
+      "name": "Geschossflächenzahl (GFZ) Prüfung",
+      "description": "Prüft das Verhältnis der gesamten Geschossfläche zur Grundstücksfläche.",
+      "category": "planning",
+      "regulationRef": "BauNVO §20",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "site",
+          "property": "calculatedGFZ",
+          "operator": ">",
+          "thresholdProperty": "bPlanGFZ",
+          "severity": "error",
+          "messageTemplate": "Geschossflächenzahl überschritten: IST {{actual}} > SOLL {{required}}.",
+          "suggestion": "Anzahl der Vollgeschosse oder Grundfläche der Obergeschosse reduzieren.",
+          "requiredValueProperty": "bPlanGFZ"
+        }
+      ]
+    },
+    {
+      "id": "sound_insulation_walls",
+      "name": "Schallschutz Wohnungstrennwände",
+      "description": "Mindestanforderungen an den Schallschutz zwischen fremden Wohnbereichen.",
+      "category": "safety",
+      "regulationRef": "DIN 4109",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "partition_walls",
+          "property": "soundReductionIndexRw",
+          "operator": "<",
+          "threshold": 53,
+          "severity": "error",
+          "messageTemplate": "Wohnungstrennwand hat unzureichenden Schallschutz ({{actual}} dB). Soll: 53 dB.",
+          "suggestion": "Wandaufbau (Masse oder Entkopplung) verbessern.",
+          "requiredValue": 53
+        }
+      ]
+    },
+    {
+      "id": "sound_insulation_floors",
+      "name": "Trittschallschutz Decken",
+      "description": "Schutz gegen Trittschallübertragung in darunterliegende Wohnungen.",
+      "category": "safety",
+      "regulationRef": "DIN 4109",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "floors",
+          "property": "impactSoundLevelLnw",
+          "operator": ">",
+          "threshold": 50,
+          "severity": "error",
+          "messageTemplate": "Trittschallwert {{actual}} dB zu hoch. Maximal zulässig: 50 dB.",
+          "suggestion": "Schwimmenden Estrich oder Trittschalldämmung verstärken.",
+          "requiredValue": 50
+        }
+      ]
+    },
+    {
+      "id": "parapet_height_low_window",
+      "name": "Brüstungshöhe bei tiefen Fenstern",
+      "description": "Absturzsicherung bei Fenstern mit geringer Brüstungshöhe.",
+      "category": "safety",
+      "regulationRef": "LBO / MBO §38",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "windows",
+          "property": "sillHeightM",
+          "operator": "<",
+          "threshold": 0.8,
+          "severity": "warning",
+          "messageTemplate": "Brüstungshöhe {{actual}}m unter 0.80m. Absturzsicherung erforderlich.",
+          "suggestion": "Festverglasung im unteren Bereich oder französisches Balkongitter vorsehen.",
+          "requiredValue": 0.8
+        }
+      ]
+    },
+    {
+      "id": "playground_requirement",
+      "name": "Kinderspielplatz-Pflicht",
+      "description": "Pflicht zur Errichtung eines Spielplatzes bei Mehrfamilienhäusern.",
+      "category": "planning",
+      "regulationRef": "MBO §8 / LBOs",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "building",
+          "property": "unitCount",
+          "operator": ">",
+          "threshold": 3,
+          "severity": "info",
+          "messageTemplate": "Gebäude mit >3 WE: Spielplatzfläche auf dem Grundstück nachweisen.",
+          "suggestion": "Spielplatzfläche (ca. 30m² - 60m²) im Lageplan einzeichnen.",
+          "requiredValue": 3
+        }
+      ]
+    },
+    {
+      "id": "smoke_detector_requirement",
+      "name": "Rauchwarnmelder-Pflicht",
+      "description": "Ausstattung von Schlafräumen und Fluren mit Rauchmeldern.",
+      "category": "fire",
+      "regulationRef": "LBO / DIN 14676",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "living_units",
+          "property": "hasSmokeDetectorsInBedrooms",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Keine Rauchwarnmelder in Schlafräumen/Fluren dokumentiert.",
+          "suggestion": "Rauchmelder-Positionen in den Elektro- oder Brandschutzplan aufnehmen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "ventilation_concept",
+      "name": "Lüftungskonzept nach DIN 1946-6",
+      "description": "Nachweis des notwendigen Luftwechsels bei Neubau/Sanierung.",
+      "category": "geometry",
+      "regulationRef": "DIN 1946-6",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "building",
+          "property": "hasVentilationConcept",
+          "operator": "==",
+          "threshold": false,
+          "severity": "warning",
+          "messageTemplate": "Lüftungskonzept fehlt. Notwendig bei hoher Luftdichtheit.",
+          "suggestion": "Lüftungstechnischen Nachweis erstellen lassen.",
+          "requiredValue": true
+        }
+      ]
+    },
+    {
+      "id": "basement_height_clear",
+      "name": "Lichte Höhe Keller",
+      "description": "Mindesthöhe für Kellerräume zur technischen Nutzung.",
+      "category": "geometry",
+      "regulationRef": "DIN 18022 (Empfehlung)",
+      "applicableStates": ["ALL"],
+      "checks": [
+        {
+          "elementType": "basement_rooms",
+          "property": "heightM",
+          "operator": "<",
+          "threshold": 2.1,
+          "severity": "warning",
+          "messageTemplate": "Kellerhöhe {{actual}}m ist für Technikräume knapp bemessen.",
+          "suggestion": "Lichte Höhe auf min. 2.10m - 2.20m prüfen.",
+          "requiredValue": 2.1
+        }
+      ]
+    },
+    {
+      "id": "roof_pv_readiness",
+      "name": "Photovoltaik-Pflicht (Solarpflicht)",
+      "description": "Verpflichtung zur Installation von PV-Anlagen auf Neubauten (Stand 2026).",
+      "category": "planning",
+      "regulationRef": "GEG 2026 / Landesgesetze",
+      "applicableStates": ["BW", "BE", "HH", "NRW", "NI"],
+      "checks": [
+        {
+          "elementType": "roof",
+          "property": "hasPVInstallation",
+          "operator": "==",
+          "threshold": false,
+          "severity": "error",
+          "messageTemplate": "Solarpflicht nicht erfüllt. Keine PV-Fläche auf dem Dach geplant.",
+          "suggestion": "PV-Module oder Solarthermie einplanen (länderspezifisch).",
+          "requiredValue": true
+        }
+      ]
+    }
+  ]
+}
