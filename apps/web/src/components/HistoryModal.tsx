@@ -1,5 +1,6 @@
 import { REASON_LABELS, type ViolationHistoryEntry } from "../api/client";
 import { STATUS_LABELS } from "./ReviewModal";
+import { Button } from "./ui";
 
 interface HistoryModalProps {
   isOpen: boolean;
@@ -47,13 +48,9 @@ export default function HistoryModal({
           )}
         </div>
         <div className="mt-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-          >
+          <Button type="button" variant="secondary" onClick={onClose} className="w-full">
             Schließen
-          </button>
+          </Button>
         </div>
       </div>
     </div>

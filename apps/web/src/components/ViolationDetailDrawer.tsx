@@ -2,6 +2,13 @@ import { Link } from "react-router-dom";
 import type { ViolationListItem } from "../api/client";
 import { REASON_LABELS } from "../api/client";
 import { STATUS_LABELS } from "./ViolationActionModal";
+import { Badge, Button } from "./ui";
+
+const severityBadgeVariant = (s: string): "critical" | "warning" | "info" | "default" =>
+  s === "critical" || s === "error" ? "critical" : s === "warning" ? "warning" : s === "info" ? "info" : "default";
+
+const statusBadgeVariant = (s: string): "default" | "warning" | "success" | "info" =>
+  s === "deferred" ? "warning" : s === "resolved" ? "success" : s === "confirmed" ? "info" : "default";
 
 interface ViolationDetailDrawerProps {
   violation: ViolationListItem | null;
@@ -55,19 +62,9 @@ export default function ViolationDetailDrawer({
         </div>
         <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
-            <div>
-              <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${
-                violation.severity === "critical" || violation.severity === "error"
-                  ? "bg-red-100 text-red-800"
-                  : violation.severity === "warning"
-                    ? "bg-amber-100 text-amber-800"
-                    : "bg-slate-100 text-slate-600"
-              }`}>
-                {severityLabel}
-              </span>
-              <span className="ml-2 inline-flex rounded px-2 py-0.5 text-xs font-medium bg-slate-100 text-slate-600">
-                {STATUS_LABELS[status] ?? status}
-              </span>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant={severityBadgeVariant(violation.severity)}>{severityLabel}</Badge>
+              <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
             </div>
             <div>
               <h4 className="font-medium text-slate-900">{violation.title}</h4>
@@ -118,45 +115,25 @@ export default function ViolationDetailDrawer({
         <div className="border-t border-slate-200 p-4 space-y-2">
           {canReview && isOpen && (
             <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={onConfirm}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              <Button variant="secondary" size="sm" onClick={onConfirm}>
                 Bestätigen
-              </button>
-              <button
-                type="button"
-                onClick={onDefer}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onDefer}>
                 Zurückstellen
-              </button>
-              <button
-                type="button"
-                onClick={onDismiss}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
+              </Button>
+              <Button variant="secondary" size="sm" onClick={onDismiss}>
                 Abweisen
-              </button>
+              </Button>
             </div>
           )}
           {canReview && status === "confirmed" && (
-            <button
-              type="button"
-              onClick={onResolve}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-            >
+            <Button variant="secondary" size="sm" onClick={onResolve}>
               Als behoben markieren
-            </button>
+            </Button>
           )}
-          <button
-            type="button"
-            onClick={onShowHistory}
-            className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
+          <Button variant="secondary" size="sm" onClick={onShowHistory} className="w-full">
             Verlauf anzeigen
-          </button>
+          </Button>
         </div>
       </div>
     </div>

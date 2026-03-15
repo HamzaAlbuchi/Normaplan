@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { organizationsApi, membershipsApi } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Badge, Button, Card, CardHeader, CardContent, Input, PageHeader } from "../components/ui";
 
 const ROLE_LABELS: Record<string, string> = {
   owner: "Inhaber",
@@ -50,69 +51,74 @@ export default function Organization() {
 
   if (!org) return null;
 
+  const breadcrumb = (
+    <Link
+      to="/"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+    >
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Zurück zum Dashboard
+    </Link>
+  );
+
   return (
     <div>
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Zurück zum Dashboard
-      </Link>
-
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{org.name}</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {org.projectCount} Projekte · {org.memberCount} Mitglieder · Ihre Rolle: {ROLE_LABELS[membership?.role ?? ""] ?? membership?.role}
-        </p>
-      </div>
+      <PageHeader
+        title={org.name}
+        description={`${org.projectCount} Projekte · ${org.memberCount} Mitglieder · Ihre Rolle: ${ROLE_LABELS[membership?.role ?? ""] ?? membership?.role}`}
+        breadcrumb={breadcrumb}
+      />
 
       {isOwner && (
-        <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-900">Mitglied einladen</h2>
-          <p className="mt-1 text-sm text-slate-500">Nutzer muss bereits registriert sein.</p>
-          <form onSubmit={handleInvite} className="mt-4 flex flex-wrap gap-3">
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="E-Mail"
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            />
-            <select
-              value={inviteRole}
-              onChange={(e) => setInviteRole(e.target.value)}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            >
-              {Object.entries(ROLE_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>{l}</option>
-              ))}
-            </select>
-            <button
-              type="submit"
-              disabled={inviteMutation.isPending || !inviteEmail.trim()}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-            >
-              {inviteMutation.isPending ? "Wird eingeladen…" : "Einladen"}
-            </button>
-          </form>
-          {inviteMutation.isError && (
-            <p className="mt-2 text-sm text-red-600">{inviteMutation.error instanceof Error ? inviteMutation.error.message : "Fehler"}</p>
-          )}
-        </div>
+        <Card className="mb-8">
+          <CardHeader
+            title="Mitglied einladen"
+            description="Nutzer muss bereits registriert sein."
+          />
+          <CardContent>
+            <form onSubmit={handleInvite} className="flex flex-wrap items-end gap-3">
+              <div className="flex-1 min-w-[200px]">
+                <Input
+                  label="E-Mail"
+                  type="email"
+                  value={inviteEmail}
+                  onChange={(e) => setInviteEmail(e.target.value)}
+                  placeholder="E-Mail"
+                />
+              </div>
+              <select
+                value={inviteRole}
+                onChange={(e) => setInviteRole(e.target.value)}
+                className="h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {Object.entries(ROLE_LABELS).map(([v, l]) => (
+                  <option key={v} value={v}>{l}</option>
+                ))}
+              </select>
+              <Button type="submit" disabled={inviteMutation.isPending || !inviteEmail.trim()}>
+                {inviteMutation.isPending ? "Wird eingeladen…" : "Einladen"}
+              </Button>
+            </form>
+            {inviteMutation.isError && (
+              <p className="mt-2 text-sm text-red-600">{inviteMutation.error instanceof Error ? inviteMutation.error.message : "Fehler"}</p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      <p className="text-sm font-semibold text-slate-900 mb-3">Mitglieder</p>
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold text-slate-900">Mitglieder</h2>
+      </div>
       <ul className="space-y-2">
         {members.map((m) => (
-          <li key={m.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
+          <li key={m.id} className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm">
             <div>
               <span className="font-medium text-slate-900">{m.name || m.email}</span>
               <span className="ml-2 text-sm text-slate-500">({m.email})</span>
             </div>
-            <span className="text-xs font-medium text-slate-500">{ROLE_LABELS[m.role] ?? m.role}</span>
+            <Badge variant="default">{ROLE_LABELS[m.role] ?? m.role}</Badge>
           </li>
         ))}
       </ul>

@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, organizationsApi, authApi, type ProjectSummary } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Button, Card, CardHeader, CardContent, Input, PageHeader } from "../components/ui";
 import StatusCard from "../components/StatusCard";
 
 const STATE_NAMES: Record<string, string> = {
@@ -73,167 +74,175 @@ export default function Dashboard() {
     createOrgMutation.mutate(newOrgName.trim());
   };
 
-  // No organizations – prompt to create
   if (orgs.length === 0) {
     return (
       <div>
-        <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Büro anlegen</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Erstellen Sie Ihr Architekturbüro, um Projekte und Prüfläufe zu verwalten.
-          </p>
-        </div>
-        <form onSubmit={handleCreateOrg} className="max-w-md">
-          <label htmlFor="org-name" className="block text-sm font-medium text-slate-700">Büroname</label>
-          <input
-            id="org-name"
-            type="text"
-            value={newOrgName}
-            onChange={(e) => setNewOrgName(e.target.value)}
-            placeholder="z. B. Muster Architekten"
-            className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-          />
-          <button
-            type="submit"
-            disabled={createOrgMutation.isPending || !newOrgName.trim()}
-            className="mt-4 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            {createOrgMutation.isPending ? "Wird erstellt…" : "Büro anlegen"}
-          </button>
-        </form>
-        {createOrgMutation.isError && (
-          <p className="mt-4 text-sm text-red-600">{createOrgMutation.error instanceof Error ? createOrgMutation.error.message : "Fehler"}</p>
-        )}
+        <PageHeader
+          title="Büro anlegen"
+          description="Erstellen Sie Ihr Architekturbüro, um Projekte und Prüfläufe zu verwalten."
+        />
+        <Card className="max-w-md">
+          <CardContent>
+            <form onSubmit={handleCreateOrg} className="space-y-4">
+              <Input
+                label="Büroname"
+                type="text"
+                value={newOrgName}
+                onChange={(e) => setNewOrgName(e.target.value)}
+                placeholder="z. B. Muster Architekten"
+              />
+              <Button
+                type="submit"
+                disabled={createOrgMutation.isPending || !newOrgName.trim()}
+              >
+                {createOrgMutation.isPending ? "Wird erstellt…" : "Büro anlegen"}
+              </Button>
+            </form>
+            {createOrgMutation.isError && (
+              <p className="mt-4 text-sm text-red-600">
+                {createOrgMutation.error instanceof Error ? createOrgMutation.error.message : "Fehler"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Projekte</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          {canCreateProject
+      <PageHeader
+        title="Projekte"
+        description={
+          canCreateProject
             ? "Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften."
-            : "Ihre zugewiesenen Projekte und Prüfberichte."}
-        </p>
-        {orgs.length > 0 && (
-          <p className="mt-1 text-xs text-slate-400">
-            {orgs.map((o, i) => (
-              <span key={o.id}>
-                {i > 0 && " · "}
-                <Link to={`/org/${o.id}`} className="text-slate-500 hover:text-slate-700">
-                  {o.name} ({ROLE_LABELS[o.role] ?? o.role})
-                </Link>
-              </span>
-            ))}
-          </p>
-        )}
-      </div>
+            : "Ihre zugewiesenen Projekte und Prüfberichte."
+        }
+        breadcrumb={
+          orgs.length > 0 && (
+            <p className="mb-2 text-xs text-slate-500">
+              {orgs.map((o, i) => (
+                <span key={o.id}>
+                  {i > 0 && " · "}
+                  <Link to={`/org/${o.id}`} className="text-slate-500 hover:text-slate-700">
+                    {o.name} ({ROLE_LABELS[o.role] ?? o.role})
+                  </Link>
+                </span>
+              ))}
+            </p>
+          )
+        }
+      />
 
       <div className="mb-8">
         <StatusCard
           runCount={stats?.runCount ?? 0}
           warningCount={stats?.warningCount ?? 0}
           errorCount={stats?.errorCount ?? 0}
-          title={canCreateProject ? "Ihre Prüfergebnisse" : "Prüfergebnisse"}
+          title={canCreateProject ? "Prüfergebnisse" : "Prüfergebnisse"}
         />
       </div>
 
       {canCreateProject && (
-        <form onSubmit={handleCreateProject} className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="flex flex-1 flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1">
-              <label htmlFor="project-name" className="sr-only">Projektname</label>
-              <input
-                id="project-name"
-                type="text"
-                value={newProjectName}
-                onChange={(e) => setNewProjectName(e.target.value)}
-                placeholder="Projektname eingeben"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="w-full sm:w-32">
-              <label htmlFor="project-zip" className="block text-xs font-medium text-slate-500 mb-1">PLZ <span className="text-red-500">*</span></label>
-              <input
-                id="project-zip"
-                type="text"
-                inputMode="numeric"
-                maxLength={5}
-                value={newProjectZip}
-                onChange={(e) => setNewProjectZip(e.target.value.replace(/\D/g, ""))}
-                placeholder="80331"
-                required
-                aria-required="true"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 placeholder-slate-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-          <button
-            type="submit"
-            disabled={createProjectMutation.isPending || !newProjectName.trim() || newProjectZip.length !== 5}
-            className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {createProjectMutation.isPending ? "Wird erstellt…" : "Neues Projekt"}
-          </button>
-        </form>
+        <Card className="mb-8">
+          <CardHeader
+            title="Neues Projekt"
+            description="Projekt anlegen und Grundrisse hochladen."
+          />
+          <CardContent>
+            <form onSubmit={handleCreateProject} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+              <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-end">
+                <div className="flex-1 min-w-0">
+                  <Input
+                    label="Projektname"
+                    type="text"
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="Projektname eingeben"
+                  />
+                </div>
+                <div className="w-full sm:w-28">
+                  <Input
+                    label="PLZ"
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={5}
+                    value={newProjectZip}
+                    onChange={(e) => setNewProjectZip(e.target.value.replace(/\D/g, ""))}
+                    placeholder="80331"
+                  />
+                </div>
+              </div>
+              <Button
+                type="submit"
+                disabled={createProjectMutation.isPending || !newProjectName.trim() || newProjectZip.length !== 5}
+                size="lg"
+              >
+                {createProjectMutation.isPending ? "Wird erstellt…" : "Projekt anlegen"}
+              </Button>
+            </form>
+            {createProjectMutation.isError && (
+              <p className="mt-4 text-sm text-red-600">
+                {createProjectMutation.error instanceof Error ? createProjectMutation.error.message : "Fehler"}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       )}
 
-      {createProjectMutation.isError && (
-        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {createProjectMutation.error instanceof Error ? createProjectMutation.error.message : "Fehler"}
-        </div>
-      )}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-slate-900">Projektliste</h2>
+      </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Projekte werden geladen…</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-500">Projekte werden geladen…</p>
+          </CardContent>
+        </Card>
       ) : projects.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Noch keine Projekte.</p>
-          <p className="mt-1 text-sm text-slate-400">
-            {canCreateProject ? "Legen Sie oben ein Projekt an und laden Sie einen Grundriss hoch." : "Sie haben noch keine zugewiesenen Projekte."}
-          </p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-600">Noch keine Projekte.</p>
+            <p className="mt-1 text-sm text-slate-500">
+              {canCreateProject
+                ? "Legen Sie oben ein Projekt an und laden Sie einen Grundriss hoch."
+                : "Sie haben noch keine zugewiesenen Projekte."}
+            </p>
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="space-y-2">
           {projects.map((p: ProjectSummary) => (
-            <li key={p.id}>
-              <Link
-                to={`/project/${p.id}`}
-                className="group flex flex-col rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:border-slate-300 hover:shadow-md"
-              >
-                <div className="flex flex-1 items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <span className="block font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                      {p.name}
-                    </span>
-                    <span className="mt-1 block text-sm text-slate-500">
-                      {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
-                      {p.state && (
-                        <span className="ml-1.5 text-slate-400">
-                          · {STATE_NAMES[p.state] ?? p.state}
-                        </span>
-                      )}
-                    </span>
-                    {p.architects && p.architects.length > 0 && (
-                      <span className="mt-0.5 block text-xs text-slate-400">
-                        Architekten: {p.architects.map((a) => a.name || a.email).join(", ")}
-                      </span>
-                    )}
-                  </div>
-                  <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-400 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                    </svg>
-                  </span>
-                </div>
-              </Link>
-            </li>
+            <Link
+              key={p.id}
+              to={`/project/${p.id}`}
+              className="group flex items-center gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-slate-300 hover:shadow"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                  {p.name}
+                </p>
+                <p className="mt-0.5 text-sm text-slate-500">
+                  {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
+                  {p.state && (
+                    <span className="text-slate-400"> · {STATE_NAMES[p.state] ?? p.state}</span>
+                  )}
+                </p>
+                {p.architects && p.architects.length > 0 && (
+                  <p className="mt-0.5 text-xs text-slate-400">
+                    Architekten: {p.architects.map((a) => a.name || a.email).join(", ")}
+                  </p>
+                )}
+              </div>
+              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </Link>
           ))}
-        </ul>
+        </div>
       )}
 
       <p className="mt-10 text-xs text-slate-400">

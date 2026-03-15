@@ -7,6 +7,7 @@ import ViolationDetailDrawer from "../components/ViolationDetailDrawer";
 import ViolationActionModal from "../components/ViolationActionModal";
 import HistoryModal from "../components/HistoryModal";
 import { STATUS_LABELS } from "../components/ViolationActionModal";
+import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
 
 const SEVERITY_LABELS: Record<string, string> = {
   info: "Hinweis",
@@ -14,6 +15,12 @@ const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
   critical: "Kritisch",
 };
+
+const severityBadgeVariant = (s: string): "critical" | "warning" | "info" | "default" =>
+  s === "critical" || s === "error" ? "critical" : s === "warning" ? "warning" : s === "info" ? "info" : "default";
+
+const statusBadgeVariant = (s: string): "default" | "warning" | "success" | "info" =>
+  s === "deferred" ? "warning" : s === "resolved" ? "success" : s === "confirmed" ? "info" : "default";
 
 const QUICK_VIEWS = (userId?: string): { key: string; label: string; params: Partial<ViolationsListParams> }[] => [
   { key: "open", label: "Offene Verstöße", params: { status: "open" } },
@@ -31,46 +38,32 @@ function ViolationCard({
   v: ViolationListItem;
   onClick: () => void;
 }) {
-  const severityClass =
+  const severityBorder =
     v.severity === "critical" || v.severity === "error"
       ? "border-l-4 border-red-500"
       : v.severity === "warning"
         ? "border-l-4 border-amber-500"
         : "border-l-4 border-slate-300";
-  const statusClass =
-    v.status === "open"
-      ? "bg-slate-100 text-slate-600"
-      : v.status === "dismissed"
-        ? "bg-slate-100 text-slate-500"
-        : v.status === "deferred"
-          ? "bg-amber-100 text-amber-800"
-          : v.status === "resolved"
-            ? "bg-emerald-100 text-emerald-800"
-            : "bg-blue-100 text-blue-800";
 
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`w-full text-left rounded-r-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 hover:shadow-md transition-all ${severityClass}`}
+      className={`group w-full text-left rounded-lg border border-slate-200 bg-white p-4 shadow-sm hover:border-slate-300 hover:shadow transition-all ${severityBorder}`}
     >
-      <div className="flex items-start justify-between gap-2">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-slate-500">{v.ruleName}</span>
-            <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${statusClass}`}>
-              {STATUS_LABELS[v.status] ?? v.status}
-            </span>
-            <span className="text-xs text-slate-400">
-              {SEVERITY_LABELS[v.severity] ?? v.severity}
-            </span>
+            <Badge variant={statusBadgeVariant(v.status)}>{STATUS_LABELS[v.status] ?? v.status}</Badge>
+            <Badge variant={severityBadgeVariant(v.severity)}>{SEVERITY_LABELS[v.severity] ?? v.severity}</Badge>
           </div>
-          <p className="mt-1 text-sm font-medium text-slate-900 line-clamp-2">{v.description}</p>
+          <p className="mt-2 text-sm font-medium text-slate-900 line-clamp-2">{v.description}</p>
           <p className="mt-1 text-xs text-slate-500">
             {v.projectName} · {v.planName}
           </p>
         </div>
-        <span className="flex-shrink-0 text-slate-400">
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
           <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
           </svg>
@@ -151,29 +144,26 @@ export default function Violations() {
     });
   };
 
+  const selectClass =
+    "h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
+
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Verstöße</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Mögliche Abweichungen von Bauvorschriften – prüfen und bewerten.
-        </p>
-      </div>
+      <PageHeader
+        title="Verstöße"
+        description="Mögliche Abweichungen von Bauvorschriften – prüfen und bewerten."
+      />
 
       <div className="mb-6 flex flex-wrap gap-2">
         {quickViews.map((q) => (
-          <button
+          <Button
             key={q.key}
-            type="button"
+            variant={quickView === q.key ? "primary" : "secondary"}
+            size="sm"
             onClick={() => setQuickView(quickView === q.key ? null : q.key)}
-            className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-              quickView === q.key
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-            }`}
           >
             {q.label}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -181,7 +171,7 @@ export default function Violations() {
         <select
           value={filters.status ?? ""}
           onChange={(e) => { setFilters((f) => ({ ...f, status: e.target.value || undefined })); setQuickView(null); }}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Alle Status</option>
           {Object.entries(STATUS_LABELS).map(([v, l]) => (
@@ -191,7 +181,7 @@ export default function Violations() {
         <select
           value={filters.severity ?? ""}
           onChange={(e) => { setFilters((f) => ({ ...f, severity: e.target.value || undefined })); setQuickView(null); }}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Alle Schweregrade</option>
           <option value="error">Kritisch</option>
@@ -201,7 +191,7 @@ export default function Violations() {
         <select
           value={filters.projectId ?? ""}
           onChange={(e) => { setFilters((f) => ({ ...f, projectId: e.target.value || undefined })); setQuickView(null); }}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="">Alle Projekte</option>
           {projects.map((p) => (
@@ -211,7 +201,7 @@ export default function Violations() {
         <select
           value={filters.sort ?? "detectedAt"}
           onChange={(e) => setFilters((f) => ({ ...f, sort: e.target.value as "detectedAt" | "updatedAt" }))}
-          className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+          className={selectClass}
         >
           <option value="detectedAt">Sortiert nach Erkennungsdatum</option>
           <option value="updatedAt">Sortiert nach Aktualisierung</option>
@@ -219,16 +209,20 @@ export default function Violations() {
       </div>
 
       {isLoading ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Verstöße werden geladen…</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-500">Verstöße werden geladen…</p>
+          </CardContent>
+        </Card>
       ) : !data?.items.length ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Keine Verstöße gefunden.</p>
-          <p className="mt-1 text-sm text-slate-400">
-            <Link to="/" className="text-blue-600 hover:underline">Projekte</Link> prüfen und Prüfläufe starten.
-          </p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-500">Keine Verstöße gefunden.</p>
+            <p className="mt-1 text-sm text-slate-400">
+              <Link to="/" className="text-blue-600 hover:underline">Projekte</Link> prüfen und Prüfläufe starten.
+            </p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="flex gap-6">
           <div className={`min-w-0 flex-1 ${selectedId ? "lg:max-w-xl" : ""}`}>

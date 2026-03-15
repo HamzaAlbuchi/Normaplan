@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Button, Card, CardContent, Input } from "../components/ui";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -35,56 +36,44 @@ export default function Login() {
           <p className="mt-1 text-sm text-slate-500">Bauvorschriften-Check für Architekten</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
-              </div>
-            )}
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                E-Mail
-              </label>
-              <input
+        <Card>
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              <Input
+                label="E-Mail"
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Passwort
-              </label>
-              <input
+              <Input
+                label="Passwort"
                 id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Wird angemeldet…" : "Anmelden"}
-            </button>
-          </form>
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Noch kein Konto?{" "}
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">
-              Registrieren
-            </Link>
-          </p>
-        </div>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Wird angemeldet…" : "Anmelden"}
+              </Button>
+            </form>
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Noch kein Konto?{" "}
+              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">
+                Registrieren
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DISMISS_REASONS, DEFER_REASONS } from "../api/client";
+import { Button } from "./ui";
 
 export const STATUS_LABELS: Record<string, string> = {
   open: "Offen",
@@ -102,20 +103,12 @@ export default function ViolationActionModal({
             />
           </div>
           <div className="flex gap-3 pt-2">
-            <button
-              type="button"
-              onClick={handleClose}
-              className="flex-1 rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-            >
+            <Button type="button" variant="secondary" onClick={handleClose} className="flex-1">
               Abbrechen
-            </button>
-            <button
-              type="submit"
-              disabled={isPending || !canSubmit}
-              className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-            >
+            </Button>
+            <Button type="submit" disabled={isPending || !canSubmit} className="flex-1">
               {isPending ? "Wird gespeichert…" : config.submitLabel}
-            </button>
+            </Button>
           </div>
         </form>
       </div>

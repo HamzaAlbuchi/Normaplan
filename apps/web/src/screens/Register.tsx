@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { authApi } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Button, Card, CardContent, Input } from "../components/ui";
 
 export default function Register() {
   const [email, setEmail] = useState("");
@@ -46,58 +47,43 @@ export default function Register() {
           <p className="mt-1 text-sm text-slate-500">Bauvorschriften-Check für Architekten</p>
         </div>
 
-        <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {error && (
-              <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                {error}
+        <Card>
+          <CardContent className="p-8">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+              <div>
+                <Input
+                  label="Einladungsschlüssel"
+                  id="invitationKey"
+                  type="text"
+                  value={invitationKey}
+                  onChange={(e) => setInvitationKey(e.target.value)}
+                  placeholder="Von Administrator erhalten"
+                />
+                <p className="mt-1 text-xs text-slate-500">Erforderlich, wenn Einladungsmodus aktiv ist.</p>
               </div>
-            )}
-            <div>
-              <label htmlFor="invitationKey" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Einladungsschlüssel
-              </label>
-              <input
-                id="invitationKey"
-                type="text"
-                value={invitationKey}
-                onChange={(e) => setInvitationKey(e.target.value)}
-                placeholder="Von Administrator erhalten"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-              <p className="mt-1 text-xs text-slate-500">Erforderlich, wenn Einladungsmodus aktiv ist.</p>
-            </div>
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Name (optional)
-              </label>
-              <input
+              <Input
+                label="Name (optional)"
                 id="name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-slate-700 mb-1.5">
-                E-Mail
-              </label>
-              <input
+              <Input
+                label="E-Mail"
                 id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1.5">
-                Passwort (min. 8 Zeichen)
-              </label>
-              <input
+              <Input
+                label="Passwort (min. 8 Zeichen)"
                 id="password"
                 type="password"
                 value={password}
@@ -105,24 +91,19 @@ export default function Register() {
                 required
                 minLength={8}
                 autoComplete="new-password"
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-            </div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? "Wird erstellt…" : "Registrieren"}
-            </button>
-          </form>
-          <p className="mt-6 text-center text-sm text-slate-500">
-            Bereits Konto?{" "}
-            <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700">
-              Anmelden
-            </Link>
-          </p>
-        </div>
+              <Button type="submit" disabled={loading} className="w-full">
+                {loading ? "Wird erstellt…" : "Registrieren"}
+              </Button>
+            </form>
+            <p className="mt-6 text-center text-sm text-slate-500">
+              Bereits Konto?{" "}
+              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-700">
+                Anmelden
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

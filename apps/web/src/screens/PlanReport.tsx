@@ -5,6 +5,7 @@ import { plansApi, runsApi, violationsApi, REASON_LABELS, type Violation, type R
 import ReviewModal, { STATUS_LABELS } from "../components/ReviewModal";
 import HistoryModal from "../components/HistoryModal";
 import { useAuthStore } from "../store/auth";
+import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
 
 const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
@@ -24,6 +25,12 @@ function groupViolations(violations: Violation[]): { error: Violation[]; warning
   return { error, warning, info };
 }
 
+const severityBadgeVariant = (s: string): "critical" | "warning" | "info" | "default" =>
+  s === "error" ? "critical" : s === "warning" ? "warning" : s === "info" ? "info" : "default";
+
+const statusBadgeVariant = (s: string): "default" | "warning" | "success" | "info" =>
+  s === "deferred" ? "warning" : s === "resolved" ? "success" : s === "confirmed" ? "info" : "default";
+
 function ViolationCard({
   v,
   onDismiss,
@@ -41,34 +48,25 @@ function ViolationCard({
   const canReview = status === "open" && v.id;
   const severityClass =
     v.severity === "error"
-      ? "border-l-4 border-red-500 bg-red-50/50"
+      ? "border-l-4 border-red-500 bg-red-50/30"
       : v.severity === "warning"
-        ? "border-l-4 border-amber-500 bg-amber-50/50"
-        : "border-l-4 border-slate-300 bg-slate-50";
-  const statusBadgeClass =
-    status === "dismissed"
-      ? "bg-slate-100 text-slate-600"
-      : status === "deferred"
-        ? "bg-amber-100 text-amber-800"
-        : status === "resolved"
-          ? "bg-emerald-100 text-emerald-800"
-          : status === "confirmed"
-            ? "bg-blue-100 text-blue-800"
-            : "bg-slate-100 text-slate-500";
+        ? "border-l-4 border-amber-500 bg-amber-50/30"
+        : "border-l-4 border-slate-300 bg-slate-50/50";
 
   return (
-    <div className={`rounded-r-lg p-4 ${severityClass}`}>
+    <div className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm ${severityClass}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium uppercase text-slate-500">{v.ruleName}</span>
             {status !== "open" && (
-              <span className={`inline-flex rounded px-2 py-0.5 text-xs font-medium ${statusBadgeClass}`}>
-                {STATUS_LABELS[status] ?? status}
-              </span>
+              <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
             )}
+            <Badge variant={severityBadgeVariant(v.severity)}>
+              {v.severity === "error" ? "Kritisch" : v.severity === "warning" ? "Warnung" : "Hinweis"}
+            </Badge>
           </div>
-          <p className="mt-1 text-slate-800">{v.message}</p>
+          <p className="mt-2 text-slate-800">{v.message}</p>
           {v.suggestion && (
             <p className="mt-2 text-sm text-slate-600">
               <strong>Vorschlag:</strong> {v.suggestion}
@@ -102,31 +100,19 @@ function ViolationCard({
       )}
       <div className="mt-3 flex flex-wrap gap-2 no-print">
         {canReview && onDismiss && (
-          <button
-            type="button"
-            onClick={() => onDismiss(v.id!)}
-            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-          >
+          <Button variant="secondary" size="sm" onClick={() => onDismiss(v.id!)}>
             Abweisen
-          </button>
+          </Button>
         )}
         {canReview && onDefer && (
-          <button
-            type="button"
-            onClick={() => onDefer(v.id!)}
-            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-          >
+          <Button variant="secondary" size="sm" onClick={() => onDefer(v.id!)}>
             Zurückstellen
-          </button>
+          </Button>
         )}
         {isManager && v.id && onShowHistory && (
-          <button
-            type="button"
-            onClick={() => onShowHistory(v.id!)}
-            className="rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 shadow-sm hover:bg-slate-50"
-          >
+          <Button variant="secondary" size="sm" onClick={() => onShowHistory(v.id!)}>
             Verlauf
-          </button>
+          </Button>
         )}
       </div>
     </div>
@@ -153,15 +139,21 @@ function ViolationSection({
   isManager?: boolean;
 }) {
   if (violations.length === 0) return null;
+  const border =
+    severity === "error"
+      ? "border-red-200"
+      : severity === "warning"
+        ? "border-amber-200"
+        : "border-slate-200";
   const bg =
     severity === "error"
-      ? "bg-red-50 border-red-200"
+      ? "bg-red-50/50"
       : severity === "warning"
-        ? "bg-amber-50 border-amber-200"
-        : "bg-slate-50 border-slate-200";
+        ? "bg-amber-50/50"
+        : "bg-slate-50/50";
   return (
-    <section className={`rounded-xl border p-5 ${bg} print:break-inside-avoid`}>
-      <h3 className="text-lg font-semibold text-slate-800 mb-1">{title}</h3>
+    <section className={`rounded-lg border ${border} ${bg} p-5 print:break-inside-avoid`}>
+      <h3 className="text-base font-semibold text-slate-800 mb-0.5">{title}</h3>
       <p className="text-sm text-slate-600 mb-4">{count} {count === 1 ? "Eintrag" : "Einträge"}</p>
       <ul className="space-y-4">
         {violations.map((v, i) => (
@@ -348,50 +340,55 @@ export default function PlanReport() {
   const hasRun = !!run;
   const canRun = Boolean(plan?.status === "ready" && plan?.elements);
 
+  const breadcrumb = plan ? (
+    <Link
+      to={`/project/${plan.projectId}`}
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+    >
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Zurück zum Projekt
+    </Link>
+  ) : null;
+
   return (
     <div className="max-w-4xl">
-      <Link
-        to={plan ? `/project/${plan.projectId}` : "/"}
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Zurück zum Projekt
-      </Link>
-
       {planLoading || !plan ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Plan wird geladen…</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-500">Plan wird geladen…</p>
+          </CardContent>
+        </Card>
       ) : (
         <>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{plan.name}</h1>
-              <p className="mt-1 text-sm text-slate-500">
-                {plan.fileName} · Status: {plan.status}
-              </p>
-              {plan.extractionError && (
-                <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-                  {plan.extractionError}
-                </p>
-              )}
-            </div>
-            {canRun && (
-              <button
-                type="button"
-                onClick={() => runMutation.mutate()}
-                disabled={runMutation.isPending}
-                className="flex-shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50 transition-colors"
-              >
-                {runMutation.isPending ? "Prüfe…" : "Prüflauf starten"}
-              </button>
-            )}
-          </div>
+          <PageHeader
+            title={plan.name}
+            description={
+              <>
+                <span className="block text-slate-500">{plan.fileName} · Status: {plan.status}</span>
+                {plan.extractionError && (
+                  <span className="block mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                    {plan.extractionError}
+                  </span>
+                )}
+              </>
+            }
+            breadcrumb={breadcrumb}
+            action={
+              canRun && (
+                <Button
+                  onClick={() => runMutation.mutate()}
+                  disabled={runMutation.isPending}
+                >
+                  {runMutation.isPending ? "Prüfe…" : "Prüflauf starten"}
+                </Button>
+              )
+            }
+          />
 
           {!canRun && plan.status !== "ready" && (
-            <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               Laden Sie eine gültige JSON- oder PDF-Plan-Datei hoch, um die Regelprüfung zu starten.
             </div>
           )}

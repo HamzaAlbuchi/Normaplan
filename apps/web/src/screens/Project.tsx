@@ -3,6 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, plansApi, membershipsApi, type PlanSummary } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Button, Card, CardHeader, CardContent, PageHeader } from "../components/ui";
 
 const STATE_NAMES: Record<string, string> = {
   BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
@@ -35,46 +36,50 @@ function ProjectAssignments({ projectId, organizationId }: { projectId: string; 
   const available = architects.filter((a) => !assignedIds.has(a.userId));
 
   return (
-    <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <h2 className="text-sm font-semibold text-slate-900">Architekten zuweisen</h2>
-      <p className="mt-1 text-sm text-slate-500">Architekten können Pläne hochladen und Prüfläufe starten.</p>
-      {assignments.length > 0 && (
-        <ul className="mt-3 space-y-2">
-          {assignments.map((a) => (
-            <li key={a.userId} className="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2">
-              <span className="text-sm">{a.name || a.email}</span>
-              <button
-                type="button"
-                onClick={() => removeMutation.mutate(a.userId)}
-                disabled={removeMutation.isPending}
-                className="text-xs text-slate-500 hover:text-red-600"
-              >
-                Entfernen
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      {available.length > 0 && (
-        <div className="mt-3">
-          <select
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
-            onChange={(e) => {
-              const v = e.target.value;
-              if (v) { addMutation.mutate(v); e.target.value = ""; }
-            }}
-          >
-            <option value="">Architekt hinzufügen…</option>
-            {available.map((a) => (
-              <option key={a.userId} value={a.userId}>{a.name || a.email}</option>
+    <Card className="mb-8">
+      <CardHeader
+        title="Architekten zuweisen"
+        description="Architekten können Pläne hochladen und Prüfläufe starten."
+      />
+      <CardContent>
+        {assignments.length > 0 && (
+          <ul className="space-y-2">
+            {assignments.map((a) => (
+              <li key={a.userId} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2">
+                <span className="text-sm text-slate-700">{a.name || a.email}</span>
+                <button
+                  type="button"
+                  onClick={() => removeMutation.mutate(a.userId)}
+                  disabled={removeMutation.isPending}
+                  className="text-xs text-slate-500 hover:text-red-600 transition-colors"
+                >
+                  Entfernen
+                </button>
+              </li>
             ))}
-          </select>
-        </div>
-      )}
-      {architects.length === 0 && (
-        <p className="mt-2 text-xs text-slate-500">Laden Sie zuerst Architekten ins Büro ein.</p>
-      )}
-    </div>
+          </ul>
+        )}
+        {available.length > 0 && (
+          <div className="mt-3">
+            <select
+              className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v) { addMutation.mutate(v); e.target.value = ""; }
+              }}
+            >
+              <option value="">Architekt hinzufügen…</option>
+              {available.map((a) => (
+                <option key={a.userId} value={a.userId}>{a.name || a.email}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {architects.length === 0 && (
+          <p className="text-sm text-slate-500">Laden Sie zuerst Architekten ins Büro ein.</p>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -142,116 +147,125 @@ export default function Project() {
     );
   };
 
+  const breadcrumb = (
+    <Link
+      to="/"
+      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+    >
+      <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+      Zurück zu Projekten
+    </Link>
+  );
+
   return (
     <div>
-      <Link
-        to="/"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 mb-6 transition-colors"
-      >
-        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-        </svg>
-        Zurück zu Projekten
-      </Link>
-
-      <div className="mb-8 flex flex-wrap items-start justify-between gap-4">
-        <div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">{project?.name ?? "Projekt"}</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Grundrisse hochladen und Prüflauf starten.
-          {project?.organizationName && (
-            <span className="block mt-0.5 text-slate-400">Büro: {project.organizationName}</span>
-          )}
-          {project?.zipCode && (
-            <span className="block mt-0.5 text-slate-500">
-              Standort: {project.zipCode}
-              {project.state && (
-                <span className="text-slate-400"> · {STATE_NAMES[project.state] ?? project.state}</span>
-              )}
-            </span>
-          )}
-        </p>
-        </div>
-        {projectId && (
-          <Link
-            to={`/violations?projectId=${projectId}`}
-            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-          >
-            Verstöße anzeigen
-          </Link>
-        )}
-      </div>
+      <PageHeader
+        title={project?.name ?? "Projekt"}
+        description={
+          <>
+            {project?.organizationName && (
+              <span className="block text-slate-500">Büro: {project.organizationName}</span>
+            )}
+            {project?.zipCode && (
+              <span className="block text-slate-500">
+                Standort: {project.zipCode}
+                {project?.state && (
+                  <span className="text-slate-400"> · {STATE_NAMES[project.state] ?? project.state}</span>
+                )}
+              </span>
+            )}
+            <span className="block text-slate-500">Grundrisse hochladen und Prüflauf starten.</span>
+          </>
+        }
+        breadcrumb={breadcrumb}
+        action={
+          projectId && (
+            <Button variant="secondary" asChild>
+              <Link to={`/violations?projectId=${projectId}`}>Verstöße anzeigen</Link>
+            </Button>
+          )
+        }
+      />
 
       {project?.organizationId && user?.organizations?.some((o) => o.id === project.organizationId && ["owner", "manager"].includes(o.role)) && (
         <ProjectAssignments projectId={projectId!} organizationId={project.organizationId} />
       )}
 
       {canWork && (
-      <div className="mb-8 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Plan hochladen</h2>
-        <p className="mt-1 text-sm text-slate-500">
-          JSON-, PDF- oder IFC/BIM-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege).
-        </p>
-        <div className="mt-4">
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".json,.pdf,.ifc"
-            onChange={handleFileChange}
-            disabled={uploading}
-            className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-blue-700 hover:file:bg-blue-100"
+        <Card className="mb-8">
+          <CardHeader
+            title="Plan hochladen"
+            description="JSON-, PDF- oder IFC/BIM-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege)."
           />
-          {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
-          {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
-        </div>
-      </div>
+          <CardContent>
+            <div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".json,.pdf,.ifc"
+                onChange={handleFileChange}
+                disabled={uploading}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+              />
+              {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
+              {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
-      <h2 className="text-sm font-semibold text-slate-900 mb-3">Pläne in diesem Projekt</h2>
+      <div className="mb-4">
+        <h2 className="text-sm font-semibold text-slate-900">Pläne in diesem Projekt</h2>
+      </div>
 
       {isLoading ? (
         <p className="text-sm text-slate-500">Lade Pläne…</p>
       ) : plans.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-8 text-center">
-          <p className="text-sm text-slate-500">Noch keine Pläne.</p>
-          <p className="mt-1 text-sm text-slate-400">Laden Sie oben eine Datei hoch.</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-600">Noch keine Pläne.</p>
+            <p className="mt-1 text-sm text-slate-500">Laden Sie oben eine Datei hoch.</p>
+          </CardContent>
+        </Card>
       ) : (
-        <ul className="space-y-3">
+        <div className="space-y-2">
           {plans.map((p: PlanSummary) => (
-            <li key={p.id} className="group flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 hover:shadow-md">
+            <div
+              key={p.id}
+              className="group flex items-center gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-slate-300"
+            >
               <Link to={`/plan/${p.id}`} className="min-w-0 flex-1">
-                <span className="block font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                <p className="font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
                   {p.name}
-                </span>
-                <span className="block text-sm text-slate-500 truncate">
+                </p>
+                <p className="mt-0.5 text-sm text-slate-500 truncate">
                   {p.fileName} · {p.status}
                   {p.lastRunId && <span className="text-blue-600"> · Bericht</span>}
-                </span>
+                </p>
               </Link>
               {canEdit && (
-              <button
-                type="button"
-                onClick={(e) => handleDeletePlan(p, e)}
-                disabled={deletePlanMutation.isPending}
-                className="flex-shrink-0 rounded-lg px-3 py-2 text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-colors disabled:opacity-50"
-                title="Plan löschen"
-              >
-                Löschen
-              </button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => handleDeletePlan(p, e)}
+                  disabled={deletePlanMutation.isPending}
+                  className="text-slate-500 hover:text-red-600"
+                >
+                  Löschen
+                </Button>
               )}
-              <Link
-                to={`/plan/${p.id}`}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-slate-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                aria-label="Bericht öffnen"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </Link>
-            </li>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to={`/plan/${p.id}`} aria-label="Bericht öffnen">
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
+              </Button>
+            </div>
           ))}
-        </ul>
+        </div>
       )}
     </div>
   );

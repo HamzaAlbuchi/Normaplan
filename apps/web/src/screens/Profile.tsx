@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { authApi } from "../api/client";
 import { useAuthStore } from "../store/auth";
+import { Button, Card, CardHeader, CardContent, Input, PageHeader } from "../components/ui";
 
 export default function Profile() {
   const queryClient = useQueryClient();
@@ -68,100 +69,77 @@ export default function Profile() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Profil & Einstellungen</h1>
-        <p className="mt-1 text-sm text-slate-500">Kontodaten und Passwort verwalten.</p>
-      </div>
+      <PageHeader
+        title="Profil & Einstellungen"
+        description="Kontodaten und Passwort verwalten."
+      />
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900">Kontoinformationen</h2>
-        <p className="mt-1 text-sm text-slate-500 mb-4">E-Mail: {profile.email}</p>
-        <form onSubmit={handleSaveProfile} className="flex flex-wrap items-end gap-3">
-          <div className="flex-1 min-w-[200px]">
-            <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1.5">
-              Name (optional)
-            </label>
-            <input
-              id="name"
-              type="text"
-              value={nameEdit || profile.name || ""}
-              onChange={(e) => setNameEdit(e.target.value)}
-              placeholder="Ihr Name"
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={updateProfileMutation.isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            {updateProfileMutation.isPending ? "Speichern…" : "Speichern"}
-          </button>
-        </form>
-        {profileMessage && (
-          <p className={`mt-3 text-sm ${profileMessage.startsWith("Profil") ? "text-green-600" : "text-red-600"}`}>
-            {profileMessage}
-          </p>
-        )}
-      </section>
+      <Card>
+        <CardHeader title="Kontoinformationen" description={`E-Mail: ${profile.email}`} />
+        <CardContent>
+          <form onSubmit={handleSaveProfile} className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[200px]">
+              <Input
+                label="Name (optional)"
+                id="name"
+                type="text"
+                value={nameEdit || profile.name || ""}
+                onChange={(e) => setNameEdit(e.target.value)}
+                placeholder="Ihr Name"
+              />
+            </div>
+            <Button type="submit" disabled={updateProfileMutation.isPending}>
+              {updateProfileMutation.isPending ? "Speichern…" : "Speichern"}
+            </Button>
+          </form>
+          {profileMessage && (
+            <p className={`mt-3 text-sm ${profileMessage.startsWith("Profil") ? "text-emerald-600" : "text-red-600"}`}>
+              {profileMessage}
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
-      <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="text-sm font-semibold text-slate-900 mb-4">Passwort ändern</h2>
-        <form onSubmit={handleChangePassword} className="space-y-4">
-          <div>
-            <label htmlFor="currentPassword" className="block text-sm font-medium text-slate-700 mb-1">
-              Aktuelles Passwort
-            </label>
-            <input
+      <Card>
+        <CardHeader title="Passwort ändern" />
+        <CardContent>
+          <form onSubmit={handleChangePassword} className="space-y-4">
+            <Input
+              label="Aktuelles Passwort"
               id="currentPassword"
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-          </div>
-          <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-slate-700 mb-1">
-              Neues Passwort (min. 8 Zeichen)
-            </label>
-            <input
+            <Input
+              label="Neues Passwort (min. 8 Zeichen)"
               id="newPassword"
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               required
               minLength={8}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-          </div>
-          <div>
-            <label htmlFor="newPasswordConfirm" className="block text-sm font-medium text-slate-700 mb-1">
-              Neues Passwort wiederholen
-            </label>
-            <input
+            <Input
+              label="Neues Passwort wiederholen"
               id="newPasswordConfirm"
               type="password"
               value={newPasswordConfirm}
               onChange={(e) => setNewPasswordConfirm(e.target.value)}
               required
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
             />
-          </div>
-          <button
-            type="submit"
-            disabled={changePasswordMutation.isPending}
-            className="rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:opacity-50"
-          >
-            {changePasswordMutation.isPending ? "Ändern…" : "Passwort ändern"}
-          </button>
-        </form>
-        {passwordMessage && (
-          <p className={`mt-3 text-sm ${passwordMessage.includes("geändert") ? "text-green-600" : "text-red-600"}`}>
-            {passwordMessage}
-          </p>
-        )}
-      </section>
+            <Button type="submit" disabled={changePasswordMutation.isPending}>
+              {changePasswordMutation.isPending ? "Ändern…" : "Passwort ändern"}
+            </Button>
+          </form>
+          {passwordMessage && (
+            <p className={`mt-3 text-sm ${passwordMessage.includes("geändert") ? "text-emerald-600" : "text-red-600"}`}>
+              {passwordMessage}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "../api/client";
 import StatusCard from "../components/StatusCard";
+import { Card, CardContent, PageHeader } from "../components/ui";
 
 export default function Admin() {
   const { data: stats, isLoading: statsLoading } = useQuery({
@@ -14,12 +15,10 @@ export default function Admin() {
 
   return (
     <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-slate-900 tracking-tight">Admin</h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Übersicht über Nutzer, Projekte und Prüfergebnisse.
-        </p>
-      </div>
+      <PageHeader
+        title="Admin"
+        description="Übersicht über Nutzer, Projekte und Prüfergebnisse."
+      />
 
       {statsLoading ? (
         <p className="text-sm text-slate-500">Statistiken werden geladen…</p>
@@ -34,40 +33,37 @@ export default function Admin() {
             />
           </div>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Nutzer</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.userCount}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Projekte</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.projectCount}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Prüfläufe</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.runCount}</p>
-            </div>
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-              <p className="text-sm font-medium text-slate-500">Verstöße gesamt</p>
-              <p className="mt-1 text-2xl font-semibold text-slate-900">{stats.violationCount}</p>
-            </div>
+            {[
+              { label: "Nutzer", value: stats.userCount },
+              { label: "Projekte", value: stats.projectCount },
+              { label: "Prüfläufe", value: stats.runCount },
+              { label: "Verstöße gesamt", value: stats.violationCount },
+            ].map(({ label, value }) => (
+              <Card key={label}>
+                <CardContent className="p-5">
+                  <p className="text-sm font-medium text-slate-500">{label}</p>
+                  <p className="mt-1 text-2xl font-semibold text-slate-900">{value}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </>
       ) : null}
 
-      <h2 className="text-lg font-semibold text-slate-900 mb-4">Nutzer & Projekte</h2>
+      <h2 className="text-base font-semibold text-slate-900 mb-4">Nutzer & Projekte</h2>
       {usersLoading ? (
         <p className="text-sm text-slate-500">Nutzer werden geladen…</p>
       ) : users.length === 0 ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-          <p className="text-sm text-slate-500">Noch keine Nutzer.</p>
-        </div>
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-500">Noch keine Nutzer.</p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
           {users.map((u) => (
-            <div
-              key={u.id}
-              className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
-            >
+            <Card key={u.id}>
+              <CardContent className="p-5">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <p className="font-medium text-slate-900">{u.email}</p>
@@ -126,7 +122,8 @@ export default function Admin() {
                   </ul>
                 </div>
               )}
-            </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       )}
