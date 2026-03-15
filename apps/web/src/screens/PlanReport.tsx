@@ -233,8 +233,13 @@ function ReportWithExport({
         </button>
       </div>
       <div className="p-6">
-        <p className="text-xs text-slate-500 mb-6">
+        <p className="text-xs text-slate-500 mb-2">
           Dies ist keine rechtliche Bewertung. Bitte prüfen Sie die Hinweise und beziehen Sie die zuständigen Vorschriften ein.
+        </p>
+        <p className="text-xs text-slate-500 mb-6 no-print">
+          <Link to="/pruefumfang" className="text-slate-600 hover:text-slate-800 underline">
+            Abgedeckte Prüfregeln anzeigen
+          </Link>
         </p>
         {!Array.isArray(run.violations) || run.violations.length === 0 ? (
           <p className="text-slate-600">Keine Verstöße gefunden.</p>

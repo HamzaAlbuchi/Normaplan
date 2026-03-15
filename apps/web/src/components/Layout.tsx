@@ -42,9 +42,6 @@ export default function Layout() {
               <Link to="/violations" className={navLink}>
                 Verstöße
               </Link>
-              <Link to="/pruefumfang" className={navLink}>
-                Prüfumfang
-              </Link>
               {user?.isAdmin && (
                 <Link to="/admin" className={navLink}>
                   Admin

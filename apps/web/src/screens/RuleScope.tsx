@@ -1,3 +1,4 @@
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { rulesApi, type RuleMetadata } from "../api/client";
 import {
@@ -16,6 +17,9 @@ import {
   STATE_NAMES,
   type RuleStatus,
 } from "../config/ruleScope";
+
+const selectClass =
+  "h-9 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500";
 
 function getRuleStatus(ruleId: string): RuleStatus {
   return RULE_STATUS_OVERLAY[ruleId] ?? "covered";
@@ -102,11 +106,51 @@ function CategorySection({
   );
 }
 
+function filterRules(
+  rules: RuleMetadata[],
+  filters: { category?: string; severity?: string; status?: string; search?: string }
+): RuleMetadata[] {
+  return rules.filter((rule) => {
+    if (filters.category && (rule.category || "planning") !== filters.category) return false;
+    const sev = rule.checks?.[0]?.severity;
+    if (filters.severity && sev !== filters.severity) return false;
+    const status = getRuleStatus(rule.id);
+    if (filters.status && status !== filters.status) return false;
+    if (filters.search?.trim()) {
+      const q = filters.search.trim().toLowerCase();
+      const match =
+        rule.name.toLowerCase().includes(q) ||
+        rule.description.toLowerCase().includes(q) ||
+        rule.id.toLowerCase().includes(q) ||
+        (rule.regulationRef?.toLowerCase().includes(q) ?? false);
+      if (!match) return false;
+    }
+    return true;
+  });
+}
+
 export default function RuleScope() {
+  const [filters, setFilters] = useState<{
+    category?: string;
+    severity?: string;
+    status?: string;
+    search?: string;
+  }>({});
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["rules", "metadata"],
     queryFn: () => rulesApi.getMetadata(),
   });
+
+  const filteredRules = useMemo(() => {
+    if (!data?.rules) return [];
+    return filterRules(data.rules, filters);
+  }, [data?.rules, filters]);
+
+  const categories = useMemo(() => {
+    const cats = new Set(data?.rules?.map((r) => r.category || "planning") ?? []);
+    return [...CATEGORY_ORDER, ...[...cats].filter((c) => !CATEGORY_ORDER.includes(c))];
+  }, [data?.rules]);
 
   if (isLoading) {
     return (
@@ -136,7 +180,7 @@ export default function RuleScope() {
     );
   }
 
-  const grouped = groupRulesByCategory(data.rules);
+  const grouped = groupRulesByCategory(filteredRules);
   const orderedCategories = CATEGORY_ORDER.filter((k) => grouped.has(k));
   const otherCategories = [...grouped.keys()].filter(
     (k) => !CATEGORY_ORDER.includes(k)
@@ -158,6 +202,78 @@ export default function RuleScope() {
         }
       />
 
+      <div className="mb-8 flex flex-wrap gap-3">
+        <input
+          type="search"
+          placeholder="Suchen (Name, Beschreibung, Regel-ID, Norm…)"
+          value={filters.search ?? ""}
+          onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value || undefined }))}
+          className={`${selectClass} min-w-[220px]`}
+        />
+        <select
+          value={filters.category ?? ""}
+          onChange={(e) => setFilters((f) => ({ ...f, category: e.target.value || undefined }))}
+          className={selectClass}
+        >
+          <option value="">Alle Kategorien</option>
+          {categories.map((c) => (
+            <option key={c} value={c}>
+              {CATEGORY_LABELS[c] ?? c}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.severity ?? ""}
+          onChange={(e) => setFilters((f) => ({ ...f, severity: e.target.value || undefined }))}
+          className={selectClass}
+        >
+          <option value="">Alle Schweregrade</option>
+          {Object.entries(SEVERITY_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.status ?? ""}
+          onChange={(e) => setFilters((f) => ({ ...f, status: e.target.value || undefined }))}
+          className={selectClass}
+        >
+          <option value="">Alle Status</option>
+          {Object.entries(STATUS_LABELS).map(([v, l]) => (
+            <option key={v} value={v}>
+              {l}
+            </option>
+          ))}
+        </select>
+        <span className="text-sm text-slate-500 self-center">
+          {filteredRules.length} {filteredRules.length === 1 ? "Regel" : "Regeln"}
+        </span>
+        {(filters.category || filters.severity || filters.status || filters.search) && (
+          <button
+            type="button"
+            onClick={() => setFilters({})}
+            className="text-sm text-slate-500 hover:text-slate-700 underline"
+          >
+            Filter zurücksetzen
+          </button>
+        )}
+      </div>
+
+      {filteredRules.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center">
+            <p className="text-sm text-slate-600">Keine Regeln entsprechen den gewählten Filtern.</p>
+            <button
+              type="button"
+              onClick={() => setFilters({})}
+              className="mt-2 text-sm text-blue-600 hover:underline"
+            >
+              Filter zurücksetzen
+            </button>
+          </CardContent>
+        </Card>
+      ) : (
       <div className="space-y-8">
         {orderedCategories.map((cat) => (
           <CategorySection
@@ -174,6 +290,7 @@ export default function RuleScope() {
           />
         ))}
       </div>
+      )}
 
       <section className="mt-12">
         <Card>
