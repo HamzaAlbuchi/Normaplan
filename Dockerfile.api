@@ -10,7 +10,7 @@ RUN npm install
 
 COPY apps/api ./
 
-RUN npx prisma generate --schema=prisma/schema.prisma && npx tsc
+RUN npx prisma generate --schema=prisma/schema.prisma && npm run build
 
 ENV NODE_ENV=production
 EXPOSE 3001
