@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, organizationsApi, authApi, type ProjectSummary } from "../api/client";
+import { projectsApi, organizationsApi, authApi, PROJECT_TYPES, type ProjectSummary, type ProjectType } from "../api/client";
 import { useAuthStore } from "../store/auth";
 import { Button, Card, CardHeader, CardContent, Input, PageHeader } from "../components/ui";
 import StatusCard from "../components/StatusCard";
@@ -24,6 +24,7 @@ const ROLE_LABELS: Record<string, string> = {
 export default function Dashboard() {
   const [newProjectName, setNewProjectName] = useState("");
   const [newProjectZip, setNewProjectZip] = useState("");
+  const [newProjectType, setNewProjectType] = useState<ProjectType>("residential");
   const [newOrgName, setNewOrgName] = useState("");
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
@@ -41,13 +42,14 @@ export default function Dashboard() {
   });
 
   const createProjectMutation = useMutation({
-    mutationFn: ({ name, zipCode }: { name: string; zipCode: string }) =>
-      projectsApi.create(name, zipCode, defaultOrgId),
+    mutationFn: ({ name, zipCode, projectType }: { name: string; zipCode: string; projectType: ProjectType }) =>
+      projectsApi.create(name, zipCode, projectType, defaultOrgId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
       setNewProjectName("");
       setNewProjectZip("");
+      setNewProjectType("residential");
     },
   });
 
@@ -172,6 +174,22 @@ export default function Dashboard() {
                     placeholder="80331"
                   />
                 </div>
+                <div className="w-full sm:w-44">
+                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
+                    Projekttyp
+                  </label>
+                  <select
+                    value={newProjectType}
+                    onChange={(e) => setNewProjectType(e.target.value as ProjectType)}
+                    className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    {PROJECT_TYPES.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <Button
                 type="submit"
@@ -225,6 +243,12 @@ export default function Dashboard() {
                 </p>
                 <p className="mt-0.5 text-sm text-slate-500">
                   {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
+                  {p.projectType && (
+                    <span className="text-slate-400">
+                      {" · "}
+                      {PROJECT_TYPES.find((t) => t.value === p.projectType)?.label ?? p.projectType}
+                    </span>
+                  )}
                   {p.state && (
                     <span className="text-slate-400"> · {STATE_NAMES[p.state] ?? p.state}</span>
                   )}

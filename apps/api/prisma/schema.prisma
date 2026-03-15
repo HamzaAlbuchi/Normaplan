@@ -57,6 +57,7 @@ model Project {
   zipCode        String
   state          String
   organizationId String
+  projectType    String?  // residential | commercial | mixed_use | industrial | education | healthcare | other
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 

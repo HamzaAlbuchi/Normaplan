@@ -130,12 +130,25 @@ export const membershipsApi = {
 };
 
 // Projects
+export const PROJECT_TYPES = [
+  { value: "residential", label: "Wohngebäude" },
+  { value: "commercial", label: "Gewerbe" },
+  { value: "mixed_use", label: "Mischnutzung" },
+  { value: "industrial", label: "Industrie" },
+  { value: "education", label: "Bildungsbauten" },
+  { value: "healthcare", label: "Gesundheitswesen" },
+  { value: "other", label: "Sonstige" },
+] as const;
+
+export type ProjectType = (typeof PROJECT_TYPES)[number]["value"];
+
 export interface ProjectSummary {
   id: string;
   name: string;
   zipCode?: string;
   state?: string;
   organizationId?: string;
+  projectType?: ProjectType | null;
   createdAt: string;
   planCount: number;
   architects?: { id: string; email: string; name?: string }[];
@@ -154,10 +167,18 @@ export interface ProjectDetail extends ProjectSummary {
 export const projectsApi = {
   list: () => api<ProjectSummary[]>("/projects"),
   getStats: () => api<DashboardStats>("/projects/stats"),
-  create: (name: string, zipCode: string, organizationId?: string) =>
-    api<ProjectSummary>("/projects", { method: "POST", body: { name, zipCode, organizationId } }),
+  create: (name: string, zipCode: string, projectType?: ProjectType | null, organizationId?: string) =>
+    api<ProjectSummary>("/projects", {
+      method: "POST",
+      body: {
+        name,
+        zipCode,
+        ...(projectType ? { projectType } : {}),
+        ...(organizationId && organizationId.trim() ? { organizationId: organizationId.trim() } : {}),
+      },
+    }),
   get: (id: string) => api<ProjectDetail>(`/projects/${id}`),
-  update: (id: string, data: { name?: string; zipCode?: string | null }) =>
+  update: (id: string, data: { name?: string; zipCode?: string | null; projectType?: ProjectType | null }) =>
     api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
   getViolationStats: (projectId: string) =>
     api<{ total: number; openCount: number; criticalCount: number }>(`/projects/${projectId}/violation-stats`),

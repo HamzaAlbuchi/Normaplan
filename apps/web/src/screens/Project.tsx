@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { projectsApi, plansApi, membershipsApi, type PlanSummary } from "../api/client";
+import { projectsApi, plansApi, membershipsApi, PROJECT_TYPES, type PlanSummary } from "../api/client";
 import { useAuthStore } from "../store/auth";
 import { Badge, Button, Card, CardHeader, CardContent, PageHeader } from "../components/ui";
 
@@ -204,6 +204,11 @@ export default function Project() {
           <>
             {project?.organizationName && (
               <span className="block text-slate-500">Büro: {project.organizationName}</span>
+            )}
+            {project?.projectType && (
+              <span className="block text-slate-500">
+                Projekttyp: {PROJECT_TYPES.find((t) => t.value === project.projectType)?.label ?? project.projectType}
+              </span>
             )}
             {project?.zipCode && (
               <span className="block text-slate-500">

@@ -12,14 +12,21 @@ import {
   getDefaultOrg,
 } from "../rbac.js";
 
+const PROJECT_TYPES = ["residential", "commercial", "mixed_use", "industrial", "education", "healthcare", "other"] as const;
+
 const createBody = z.object({
   name: z.string().min(1),
   zipCode: z.string().length(5).regex(/^[0-9]{5}$/),
-  organizationId: z.string().cuid().optional(),
+  projectType: z.enum(PROJECT_TYPES).optional(),
+  organizationId: z.preprocess(
+    (v) => (v === "" || v === null ? undefined : v),
+    z.string().cuid().optional()
+  ),
 });
 const updateBody = z.object({
   name: z.string().min(1).optional(),
   zipCode: z.string().length(5).regex(/^[0-9]{5}$/).optional(),
+  projectType: z.enum(PROJECT_TYPES).optional().nullable(),
 });
 const assignBody = z.object({ userId: z.string().cuid() });
 
@@ -67,6 +74,7 @@ export async function projectRoutes(app: FastifyInstance) {
       zipCode: p.zipCode,
       state: p.state,
       organizationId: p.organizationId,
+      projectType: p.projectType,
       createdAt: p.createdAt.toISOString(),
       planCount: p._count.plans,
       architects: p.assignments.map((a) => ({ id: a.user.id, email: a.user.email, name: a.user.name })),
@@ -94,7 +102,13 @@ export async function projectRoutes(app: FastifyInstance) {
       return reply.status(400).send({ code: "INVALID_ZIP", message: "Ungültige deutsche Postleitzahl (5 Ziffern)." });
 
     const project = await prisma.project.create({
-      data: { name: body.data.name, organizationId: orgId, zipCode, state },
+      data: {
+        name: body.data.name,
+        organizationId: orgId,
+        zipCode,
+        state,
+        projectType: body.data.projectType ?? null,
+      },
       include: { _count: { select: { plans: true } } },
     });
     return reply.status(201).send({
@@ -103,6 +117,7 @@ export async function projectRoutes(app: FastifyInstance) {
       zipCode: project.zipCode,
       state: project.state,
       organizationId: project.organizationId,
+      projectType: project.projectType,
       createdAt: project.createdAt.toISOString(),
       planCount: 0,
     });
@@ -149,6 +164,7 @@ export async function projectRoutes(app: FastifyInstance) {
       zipCode: project.zipCode,
       state: project.state,
       organizationId: project.organizationId,
+      projectType: project.projectType,
       organizationName: project.organization.name,
       createdAt: project.createdAt.toISOString(),
       planCount: project._count.plans,
@@ -187,6 +203,7 @@ export async function projectRoutes(app: FastifyInstance) {
       zipCode: updated.zipCode,
       state: updated.state,
       organizationId: updated.organizationId,
+      projectType: updated.projectType,
       createdAt: updated.createdAt.toISOString(),
       planCount: updated._count.plans,
     };
