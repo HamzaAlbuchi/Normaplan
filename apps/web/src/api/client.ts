@@ -396,7 +396,10 @@ export interface AdminUser {
 }
 
 export const adminApi = {
-  getStats: () => api<AdminStats>("/admin/stats"),
+  getStats: (params?: { projectStatus?: string }) => {
+    const q = params?.projectStatus ? `?projectStatus=${encodeURIComponent(params.projectStatus)}` : "";
+    return api<AdminStats>(`/admin/stats${q}`);
+  },
   getUsers: () => api<AdminUser[]>("/admin/users"),
 };
 

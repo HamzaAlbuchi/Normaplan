@@ -13,23 +13,49 @@ export async function adminRoutes(app: FastifyInstance) {
     }
   });
 
-  app.get("/stats", async () => {
+  app.get("/stats", async (req) => {
+    const query = req.query as { projectStatus?: string };
+    const statuses = query.projectStatus
+      ? query.projectStatus.split(",").map((s) => s.trim()).filter(Boolean)
+      : ["ongoing"];
+
     const [userCount, projectCount, runs] = await Promise.all([
       prisma.user.count(),
-      prisma.project.count(),
-      prisma.ruleRun.findMany({ select: { warningCount: true, errorCount: true } }),
+      prisma.project.count({ where: { status: { in: statuses } } }),
+      prisma.ruleRun.findMany({
+        where: { plan: { project: { status: { in: statuses } } } },
+        select: { id: true, checkedAt: true },
+        orderBy: { checkedAt: "desc" },
+      }),
     ]);
     const runCount = runs.length;
-    const warningCount = runs.reduce((s, r) => s + r.warningCount, 0);
-    const errorCount = runs.reduce((s, r) => s + r.errorCount, 0);
-    const violationCount = warningCount + errorCount;
+    const runIds = runs.map((r) => r.id);
+    const lastRun = runs[0];
+
+    const [errorCount, warningCount, infoCount] =
+      runIds.length === 0
+        ? [0, 0, 0]
+        : await Promise.all([
+            prisma.ruleViolation.count({
+              where: { runId: { in: runIds }, status: "open", severity: "error" },
+            }),
+            prisma.ruleViolation.count({
+              where: { runId: { in: runIds }, status: "open", severity: "warning" },
+            }),
+            prisma.ruleViolation.count({
+              where: { runId: { in: runIds }, status: "open", severity: "info" },
+            }),
+          ]);
+
     return {
       userCount,
       projectCount,
       runCount,
-      violationCount,
+      violationCount: errorCount + warningCount + infoCount,
       warningCount,
       errorCount,
+      infoCount,
+      lastRunAt: lastRun?.checkedAt?.toISOString() ?? null,
     };
   });
 

@@ -1,12 +1,14 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { adminApi } from "../api/client";
 import StatusCard from "../components/StatusCard";
 import { Card, CardContent, PageHeader } from "../components/ui";
 
 export default function Admin() {
+  const [projectStatusFilter, setProjectStatusFilter] = useState<string>("ongoing");
   const { data: stats, isLoading: statsLoading } = useQuery({
-    queryKey: ["admin", "stats"],
-    queryFn: () => adminApi.getStats(),
+    queryKey: ["admin", "stats", projectStatusFilter],
+    queryFn: () => adminApi.getStats({ projectStatus: projectStatusFilter }),
   });
   const { data: users = [], isLoading: usersLoading } = useQuery({
     queryKey: ["admin", "users"],
@@ -24,12 +26,37 @@ export default function Admin() {
         <p className="text-sm text-slate-500">Statistiken werden geladen…</p>
       ) : stats ? (
         <>
-          <div className="mb-6">
+          <div className="mb-8">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <label className="text-sm font-medium text-slate-600">Projekte einbeziehen:</label>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { value: "ongoing", label: "Nur laufende" },
+                  { value: "ongoing,paused", label: "+ Pausierte" },
+                  { value: "ongoing,paused,ended", label: "+ Abgeschlossene" },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setProjectStatusFilter(opt.value)}
+                    className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      projectStatusFilter === opt.value
+                        ? "bg-slate-800 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <StatusCard
               runCount={stats.runCount}
               warningCount={stats.warningCount}
               errorCount={stats.errorCount}
-              title="Gesamtstatus"
+              infoCount={stats.infoCount}
+              lastRunAt={stats.lastRunAt}
+              title="Prüfergebnisse"
             />
           </div>
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

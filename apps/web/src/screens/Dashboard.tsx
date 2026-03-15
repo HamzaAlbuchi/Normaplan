@@ -268,13 +268,11 @@ export default function Dashboard() {
                   {p.name}
                 </p>
                 <p className="mt-0.5 text-sm text-slate-500">
+                  <span className="text-slate-400">
+                    {PROJECT_STATUSES.find((s) => s.value === (p.status ?? "ongoing"))?.label ?? "Laufend"}
+                  </span>
+                  <span className="text-slate-400"> · </span>
                   {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
-                  {p.status && p.status !== "ongoing" && (
-                    <span className="text-slate-400">
-                      {" · "}
-                      {PROJECT_STATUSES.find((s) => s.value === p.status)?.label ?? p.status}
-                    </span>
-                  )}
                   {p.projectType && (
                     <span className="text-slate-400">
                       {" · "}

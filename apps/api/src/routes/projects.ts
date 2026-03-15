@@ -75,27 +75,28 @@ export async function projectRoutes(app: FastifyInstance) {
       };
     }
 
-    // Count violations from RuleViolation (exclude dismissed/resolved)
-    const activeStatuses = ["open", "confirmed", "deferred"];
+    // Count only OPEN violations (exclude dismissed, resolved, confirmed, deferred)
+    // Aligns with "Offene Verstöße" filter so dashboard matches violations list
+    const openStatus = ["open"];
     const [errorCount, warningCount, infoCount] = await Promise.all([
       prisma.ruleViolation.count({
         where: {
           runId: { in: runIds },
-          status: { in: activeStatuses },
+          status: { in: openStatus },
           severity: "error",
         },
       }),
       prisma.ruleViolation.count({
         where: {
           runId: { in: runIds },
-          status: { in: activeStatuses },
+          status: { in: openStatus },
           severity: "warning",
         },
       }),
       prisma.ruleViolation.count({
         where: {
           runId: { in: runIds },
-          status: { in: activeStatuses },
+          status: { in: openStatus },
           severity: "info",
         },
       }),

@@ -166,12 +166,15 @@ export default function Project() {
     },
   });
 
+  const [statusSaved, setStatusSaved] = useState(false);
   const updateStatusMutation = useMutation({
     mutationFn: (status: ProjectStatus) => projectsApi.update(projectId!, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["project", projectId] });
       queryClient.invalidateQueries({ queryKey: ["projects"] });
       queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
+      setStatusSaved(true);
+      setTimeout(() => setStatusSaved(false), 2000);
     },
   });
 
@@ -232,6 +235,9 @@ export default function Project() {
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
+                {statusSaved && (
+                  <span className="ml-2 text-xs text-emerald-600">Gespeichert</span>
+                )}
               </span>
             )}
             {!canEdit && project?.status && project.status !== "ongoing" && (
