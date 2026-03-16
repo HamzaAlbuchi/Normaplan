@@ -32,7 +32,11 @@ async function start() {
     attachFieldsToBody: "keyValues",
   });
 
-  app.get("/health", async () => ({ status: "ok", service: "baupilot-api" }));
+  app.get("/health", async () => ({
+    status: "ok",
+    service: "baupilot-api",
+    geminiConfigured: !!config.geminiApiKey,
+  }));
 
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(organizationRoutes, { prefix: "/api/organizations" });
@@ -56,6 +60,7 @@ async function start() {
   const port = Number(process.env.PORT) || 3001;
   await app.listen({ port, host: "0.0.0.0" });
   console.log(`BauPilot API listening on port ${port}`);
+  console.log(`Gemini PDF analysis: ${config.geminiApiKey ? "enabled" : "disabled (set GEMINI_API_KEY to enable)"}`);
 }
 
 start().catch((err) => {
