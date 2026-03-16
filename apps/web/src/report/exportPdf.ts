@@ -1,9 +1,9 @@
 /**
- * PDF export: opens the report in a new window and triggers print.
- * The report is a standalone HTML document, not the dashboard UI.
+ * PDF export: renders the report in a hidden iframe and triggers print.
+ * No new tab opens. Uses a dedicated report template, not the dashboard UI.
  */
 
-import type { PlanDetail, RunDetail } from "../api/client";
+import type { RunDetail } from "../api/client";
 import { groupSimilarFindings, getTopPriorityFindings } from "./reportHelpers";
 import { buildReportHtml } from "./reportTemplate";
 
@@ -14,7 +14,7 @@ export interface ExportPdfParams {
 }
 
 /**
- * Open the report in a new window and trigger print dialog.
+ * Render the report in a hidden iframe and trigger print dialog.
  * Uses a dedicated report template - does not print the main app.
  */
 export function exportReportAsPdf(params: ExportPdfParams): void {
@@ -35,18 +35,39 @@ export function exportReportAsPdf(params: ExportPdfParams): void {
     topFindings
   );
 
-  const printWindow = window.open("", "_blank");
-  if (!printWindow) {
-    alert("Pop-up blockiert. Bitte erlauben Sie Pop-ups für den PDF-Export.");
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "absolute";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  iframe.style.left = "-9999px";
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentWindow?.document;
+  if (!doc) {
+    document.body.removeChild(iframe);
     return;
   }
 
-  printWindow.document.write(html);
-  printWindow.document.close();
+  doc.open();
+  doc.write(html);
+  doc.close();
 
-  printWindow.onload = () => {
-    printWindow.focus();
-    printWindow.print();
-    printWindow.onafterprint = () => printWindow.close();
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
   };
+
+  let cleaned = false;
+  const cleanup = () => {
+    if (cleaned) return;
+    cleaned = true;
+    try {
+      document.body.removeChild(iframe);
+    } catch {
+      /* already removed */
+    }
+  };
+  iframe.contentWindow?.addEventListener("afterprint", cleanup);
+  setTimeout(cleanup, 30000);
 }
