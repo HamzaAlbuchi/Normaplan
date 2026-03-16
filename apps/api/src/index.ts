@@ -32,11 +32,13 @@ async function start() {
     attachFieldsToBody: "keyValues",
   });
 
-  app.get("/health", async () => ({
+  const healthPayload = () => ({
     status: "ok",
     service: "baupilot-api",
     geminiConfigured: !!config.geminiApiKey,
-  }));
+  });
+  app.get("/health", async () => healthPayload());
+  app.get("/api/health", async () => healthPayload());
 
   await app.register(authRoutes, { prefix: "/api/auth" });
   await app.register(organizationRoutes, { prefix: "/api/organizations" });
