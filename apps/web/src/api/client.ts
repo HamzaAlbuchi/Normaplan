@@ -199,6 +199,8 @@ export const projectsApi = {
     api<void>(`/projects/${projectId}/assignments`, { method: "POST", body: { userId } }),
   removeAssignment: (projectId: string, userId: string) =>
     api<void>(`/projects/${projectId}/assignments/${userId}`, { method: "DELETE" }),
+  delete: (id: string) =>
+    api<void>(`/projects/${id}`, { method: "DELETE" }),
 };
 
 // Plans

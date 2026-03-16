@@ -1,8 +1,11 @@
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import fs from "node:fs/promises";
+import path from "node:path";
 import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { parseGermanZipCode } from "../plzToState.js";
+import { config } from "../config.js";
 import {
   listAccessibleProjectIds,
   canCreateProject,
@@ -320,6 +323,22 @@ export async function projectRoutes(app: FastifyInstance) {
     await prisma.projectAssignment.deleteMany({
       where: { projectId, userId },
     });
+    return reply.status(204).send();
+  });
+
+  app.delete("/:projectId", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { projectId } = req.params as { projectId: string };
+    if (!(await canManageProject(user.id, projectId)))
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+
+    const project = await prisma.project.findUnique({ where: { id: projectId } });
+    if (!project) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+
+    const uploadProjectDir = path.join(config.uploadDir, projectId);
+    await fs.rm(uploadProjectDir, { recursive: true }).catch(() => {});
+
+    await prisma.project.delete({ where: { id: projectId } });
     return reply.status(204).send();
   });
 }

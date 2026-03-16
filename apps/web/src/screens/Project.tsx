@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { projectsApi, plansApi, membershipsApi, PROJECT_TYPES, PROJECT_STATUSES, type PlanSummary, type ProjectStatus } from "../api/client";
 import { useAuthStore } from "../store/auth";
@@ -122,6 +122,7 @@ function ProjectAssignments({ projectId, organizationId }: { projectId: string; 
 
 export default function Project() {
   const { projectId } = useParams<{ projectId: string }>();
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -166,6 +167,15 @@ export default function Project() {
     },
   });
 
+  const deleteProjectMutation = useMutation({
+    mutationFn: (id: string) => projectsApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["projects"] });
+      queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
+      navigate("/");
+    },
+  });
+
   const [statusSaved, setStatusSaved] = useState(false);
   const updateStatusMutation = useMutation({
     mutationFn: (status: ProjectStatus) => projectsApi.update(projectId!, { status }),
@@ -183,6 +193,12 @@ export default function Project() {
     e.stopPropagation();
     if (!window.confirm(`Plan „${plan.name}" wirklich löschen?`)) return;
     deletePlanMutation.mutate(plan.id);
+  };
+
+  const handleDeleteProject = () => {
+    if (!project?.name || !projectId) return;
+    if (!window.confirm(`Projekt „${project.name}" und alle Pläne unwiderruflich löschen?`)) return;
+    deleteProjectMutation.mutate(projectId);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -259,9 +275,21 @@ export default function Project() {
         breadcrumb={breadcrumb}
         action={
           projectId && (
-            <Button variant="secondary" asChild>
-              <Link to={`/violations?projectId=${projectId}`}>Verstöße anzeigen</Link>
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button variant="secondary" asChild>
+                <Link to={`/violations?projectId=${projectId}`}>Verstöße anzeigen</Link>
+              </Button>
+              {canEdit && (
+                <Button
+                  variant="ghost"
+                  onClick={handleDeleteProject}
+                  disabled={deleteProjectMutation.isPending}
+                  className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                >
+                  {deleteProjectMutation.isPending ? "Wird gelöscht…" : "Projekt löschen"}
+                </Button>
+              )}
+            </div>
           )
         }
       />
