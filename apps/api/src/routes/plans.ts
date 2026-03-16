@@ -31,13 +31,19 @@ export async function planRoutes(app: FastifyInstance) {
     const body = (rawBody instanceof Promise ? await rawBody : rawBody) as Record<string, unknown> | undefined;
     const projectId = typeof body?.projectId === "string" ? body.projectId : undefined;
     const name = typeof body?.name === "string" ? body.name : undefined;
-    const fileField = body?.file as { toBuffer?: () => Promise<Buffer>; _buf?: Buffer; filename?: string } | undefined;
+    const fileField = body?.file;
+    const filenameField = typeof body?.filename === "string" ? body.filename : undefined;
 
     let buf: Buffer | undefined;
     let filename = "";
-    if (fileField) {
-      buf = fileField._buf ?? (typeof fileField.toBuffer === "function" ? await fileField.toBuffer() : undefined);
-      filename = fileField.filename ?? "";
+    if (Buffer.isBuffer(fileField)) {
+      buf = fileField;
+      filename = filenameField ?? name ?? "upload";
+    } else if (fileField && typeof fileField === "object") {
+      const f = fileField as { toBuffer?: () => Promise<Buffer>; _buf?: Buffer; filename?: string; value?: Buffer };
+      buf = f._buf ?? (typeof f.value === "object" && Buffer.isBuffer(f.value) ? f.value : undefined);
+      if (!buf && typeof f.toBuffer === "function") buf = await f.toBuffer();
+      filename = f.filename ?? filenameField ?? name ?? "upload";
     }
 
     if (!buf || !filename) return reply.status(400).send({ code: "MISSING_FILE", message: "No file uploaded" });

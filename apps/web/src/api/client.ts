@@ -222,6 +222,7 @@ export const plansApi = {
     const form = new FormData();
     // Append fields before file so multipart parser receives them before consuming the file stream
     form.append("projectId", projectId);
+    form.append("filename", file.name);
     if (name) form.append("name", name);
     form.append("file", file);
     return api<PlanSummary>("/plans/upload", { method: "POST", body: form });

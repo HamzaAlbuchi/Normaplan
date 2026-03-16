@@ -21,8 +21,8 @@ const createBody = z.object({
   projectType: z.enum(PROJECT_TYPES).optional(),
   status: z.enum(PROJECT_STATUSES).optional(),
   organizationId: z.preprocess(
-    (v) => (v === "" || v === null ? undefined : v),
-    z.string().cuid().optional()
+    (v) => (v === "" || v === null || v === undefined ? undefined : v),
+    z.string().min(1).max(128).optional()
   ),
 });
 const updateBody = z.object({
