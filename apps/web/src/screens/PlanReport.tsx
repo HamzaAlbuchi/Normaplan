@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { plansApi, runsApi, violationsApi, REASON_LABELS, type Violation, type RunDetail } from "../api/client";
@@ -197,7 +197,6 @@ function ReportWithExport({
   onShowHistory?: (id: string) => void;
   isManager?: boolean;
 }) {
-  const printRef = useRef<HTMLDivElement>(null);
   const violations = Array.isArray(run.violations) ? run.violations : [];
   const ruleViolations = violations.filter((v) => !isAiViolation(v));
   const aiViolations = violations.filter((v) => isAiViolation(v));
@@ -205,24 +204,13 @@ function ReportWithExport({
   const groupedAi = groupViolations(aiViolations);
 
   const handleExportPdf = () => {
-    const el = printRef.current;
-    if (!el) return;
-    const prevTitle = document.title;
-    document.title = `BauPilot Prüfbericht – ${plan.name}`;
-    const printStyles = document.createElement("style");
-    printStyles.textContent = `
-      @media print { body * { visibility: hidden; } .print-only, .print-only * { visibility: visible; } .print-only { position: absolute; left: 0; top: 0; width: 100%; } .no-print { display: none !important; } }
-    `;
-    document.head.appendChild(printStyles);
-    el.classList.add("print-only");
-    window.print();
-    el.classList.remove("print-only");
-    document.head.removeChild(printStyles);
-    document.title = prevTitle;
+    import("../report/exportPdf").then(({ exportReportAsPdf }) => {
+      exportReportAsPdf({ plan, run, planId });
+    });
   };
 
   return (
-    <div ref={printRef} className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
       <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <img src="/logo.png" alt="BauPilot" className="h-16 object-contain flex-shrink-0" />
@@ -237,7 +225,7 @@ function ReportWithExport({
         <button
           type="button"
           onClick={handleExportPdf}
-          className="no-print rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
         >
           Als PDF exportieren
         </button>
