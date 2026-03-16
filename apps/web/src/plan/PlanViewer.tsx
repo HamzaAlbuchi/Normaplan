@@ -42,14 +42,14 @@ export interface PlanViewerProps {
   topDownOnly?: boolean;
 }
 
-const ROOM_COLOR = 0xe8e8e8;
+const ROOM_COLOR = 0xd1d5db;
 const ROOM_VIOLATION_COLOR = 0xfecaca;
 const WALL_COLOR = 0x94a3b8;
 const DOOR_COLOR = 0x64748b;
 const DOOR_VIOLATION_COLOR = 0xef4444;
-const WINDOW_COLOR = 0x7dd3fc;
+const WINDOW_COLOR = 0x38bdf8;
 const WINDOW_VIOLATION_COLOR = 0xf59e0b;
-const CORRIDOR_COLOR = 0xcbd5e1;
+const CORRIDOR_COLOR = 0x9ca3af;
 
 function getViolatedIds(violations: ViolationLike[] | undefined): Set<string> {
   const set = new Set<string>();
@@ -129,21 +129,21 @@ export function PlanViewer({
     const pad = 3;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf8fafc);
+    scene.background = new THREE.Color(0xf1f5f9);
     sceneRef.current = scene;
 
+    const centerX = (bounds.minX + bounds.maxX) / 2;
+    const centerZ = -(bounds.minY + bounds.maxY) / 2;
     const camera = new THREE.OrthographicCamera(
       bounds.minX - pad,
       bounds.maxX + pad,
-      bounds.maxY + pad,
-      bounds.minY - pad,
+      -bounds.minY + pad,
+      -bounds.maxY - pad,
       0.1,
       1000
     );
-    const centerX = (bounds.minX + bounds.maxX) / 2;
-    const centerY = (bounds.minY + bounds.maxY) / 2;
-    camera.position.set(centerX, centerY, 20);
-    camera.lookAt(centerX, centerY, 0);
+    camera.position.set(centerX, 25, centerZ);
+    camera.lookAt(centerX, 0, centerZ);
     camera.updateProjectionMatrix();
     cameraRef.current = camera;
 
@@ -173,21 +173,32 @@ export function PlanViewer({
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.position.z = -0.01;
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = -0.01;
       mesh.userData = { elementId: r.id, type: "room" };
       scene.add(mesh);
       meshesByElement.set(r.id, mesh);
 
+      const edgeGeom = new THREE.EdgesGeometry(geom);
+      const edgeMat = new THREE.LineBasicMaterial({
+        color: isViolated ? 0xdc2626 : 0x64748b,
+        linewidth: 1,
+      });
+      const edges = new THREE.LineSegments(edgeGeom, edgeMat);
+      edges.rotation.x = -Math.PI / 2;
+      edges.position.y = -0.005;
+      scene.add(edges);
+
       if (!topDownOnly) {
         const wallGeom = new THREE.EdgesGeometry(
-          new THREE.BoxGeometry(r.width, r.depth, WALL_HEIGHT)
+          new THREE.BoxGeometry(r.width, WALL_HEIGHT, r.depth)
         );
         const wallMat = new THREE.LineBasicMaterial({
           color: isViolated ? 0xdc2626 : WALL_COLOR,
           linewidth: 1,
         });
         const wallLines = new THREE.LineSegments(wallGeom, wallMat);
-        wallLines.position.set(r.x + r.width / 2, r.y + r.depth / 2, WALL_HEIGHT / 2);
+        wallLines.position.set(r.x + r.width / 2, WALL_HEIGHT / 2, -(r.y + r.depth / 2));
         wallLines.userData = { elementId: r.id, type: "room" };
         scene.add(wallLines);
       }
@@ -205,7 +216,8 @@ export function PlanViewer({
         geom,
         new THREE.MeshBasicMaterial({ color: CORRIDOR_COLOR, side: THREE.DoubleSide })
       );
-      mesh.position.z = -0.02;
+      mesh.rotation.x = -Math.PI / 2;
+      mesh.position.y = -0.02;
       scene.add(mesh);
     };
 
@@ -216,8 +228,8 @@ export function PlanViewer({
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.position.set(d.x + d.width / 2, d.y + d.depth / 2, 0.02);
       mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(d.x + d.width / 2, 0.02, -(d.y + d.depth / 2));
       mesh.userData = { elementId: d.id, type: "door" };
       scene.add(mesh);
       meshesByElement.set(d.id, mesh);
@@ -230,8 +242,8 @@ export function PlanViewer({
         side: THREE.DoubleSide,
       });
       const mesh = new THREE.Mesh(geom, mat);
-      mesh.position.set(w.x + w.width / 2, w.y + w.depth / 2, 0.03);
       mesh.rotation.x = -Math.PI / 2;
+      mesh.position.set(w.x + w.width / 2, 0.03, w.y + w.depth / 2);
       mesh.userData = { elementId: w.id, type: "window" };
       scene.add(mesh);
       meshesByElement.set(w.id, mesh);
