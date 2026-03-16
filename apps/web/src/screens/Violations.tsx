@@ -129,21 +129,21 @@ export default function Violations() {
     queryFn: () => violationsApi.listRuleTypes(),
   });
 
-  // Deduplicate by ruleName; when duplicate names exist, append ruleId for disambiguation
+  // Rule types: show all, hide "ai-gemini" from labels; collapse similar names into one
   const ruleTypes = (() => {
-    const byName = new Map<string, { id: string; name: string }[]>();
+    const displayName = (r: { id: string; name: string }) =>
+      r.id.startsWith("ai-gemini-") ? (r.name || "KI-Hinweis") : r.name;
+
+    const byDisplayName = new Map<string, { id: string; name: string }[]>();
     for (const r of ruleTypesRaw) {
-      const list = byName.get(r.name) ?? [];
+      const label = displayName(r);
+      const list = byDisplayName.get(label) ?? [];
       list.push(r);
-      byName.set(r.name, list);
+      byDisplayName.set(label, list);
     }
     const result: { id: string; name: string }[] = [];
-    for (const [, list] of byName) {
-      if (list.length === 1) {
-        result.push(list[0]);
-      } else {
-        list.forEach((r) => result.push({ id: r.id, name: `${r.name} (${r.id})` }));
-      }
+    for (const [label, list] of byDisplayName) {
+      result.push({ id: list[0].id, name: label });
     }
     return result.sort((a, b) => a.name.localeCompare(b.name));
   })();
