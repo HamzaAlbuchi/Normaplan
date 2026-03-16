@@ -49,7 +49,7 @@ Erfinde keine Elemente – extrahiere nur was im Plan erkennbar ist. IDs eindeut
 Fenster: roomId muss auf eine existierende room.id verweisen.`;
 }
 
-function extractJsonFromResponse(text: string): string {
+export function extractJsonFromResponse(text: string): string {
   const trimmed = text.trim();
   const start = trimmed.indexOf("{");
   const end = trimmed.lastIndexOf("}");
@@ -59,7 +59,7 @@ function extractJsonFromResponse(text: string): string {
   return trimmed.slice(start, end + 1);
 }
 
-function parseAndValidateElements(jsonStr: string): PlanElements {
+export function parseAndValidateElements(jsonStr: string): PlanElements {
   const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
   const rooms = Array.isArray(parsed.rooms) ? parsed.rooms : [];
   const corridors = Array.isArray(parsed.corridors) ? parsed.corridors : [];

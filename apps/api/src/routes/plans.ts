@@ -11,6 +11,7 @@ import { parsePlanFromJson } from "../parser/mockParser.js";
 import { parsePlanFromPdfWithContext } from "../parser/geminiParser.js";
 import { parsePlanFromPdf } from "../parser/pdfParser.js";
 import { parsePlanFromIfc } from "../parser/ifcParser.js";
+import { convertDwgToPdf } from "../services/dwgToPdfService.js";
 import { computeFileHash } from "../services/fileHashService.js";
 import { detectFileType } from "../services/fileTypeDetection.js";
 import { findReusableArtifact, saveNewArtifact } from "../services/analysisReuseService.js";
@@ -78,7 +79,7 @@ export async function planRoutes(app: FastifyInstance) {
     let artifactExpiresAt: string | null = null;
     let actualExtractorStrategy = detected.extractorStrategy;
 
-    const supportedForReuse = ext === ".json" || ext === ".pdf" || ext === ".ifc";
+    const supportedForReuse = ext === ".json" || ext === ".pdf" || ext === ".ifc" || ext === ".dwg" || ext === ".dxf";
 
     if (supportedForReuse) {
       const reused = await findReusableArtifact({
@@ -140,9 +141,35 @@ export async function planRoutes(app: FastifyInstance) {
         status = "failed";
         extractionError = e instanceof Error ? e.message : "IFC/BIM extraction failed";
       }
+    } else if ((ext === ".dwg" || ext === ".dxf") && useGemini && config.convertApiSecret?.trim()) {
+      try {
+        const pdfBuffer = await convertDwgToPdf(buf, filename, config.convertApiSecret);
+        const context = {
+          zipCode: project.zipCode,
+          state: project.state,
+          projectType: project.projectType,
+        };
+        const elements = await parsePlanFromPdfWithContext(
+          pdfBuffer,
+          context,
+          config.geminiApiKey!
+        );
+        elementsJson = JSON.stringify(elements);
+        status = "ready";
+      } catch (e) {
+        status = "failed";
+        extractionError = e instanceof Error ? e.message : "DWG/DXF conversion or extraction failed";
+      }
+    } else if ((ext === ".dwg" || ext === ".dxf") && useGemini) {
+      status = "failed";
+      extractionError =
+        "DWG/DXF conversion requires CONVERTAPI_SECRET. Sign up at convertapi.com (250 free conversions) or convert to PDF manually.";
+    } else if (ext === ".dwg" || ext === ".dxf") {
+      status = "failed";
+      extractionError = "DWG/DXF requires GEMINI_API_KEY and CONVERTAPI_SECRET. Set both or convert to PDF.";
     } else {
       status = "uploaded";
-      extractionError = "Unsupported file type. Use .json, .pdf, or .ifc (BIM).";
+      extractionError = "Unsupported file type. Use .json, .pdf, .ifc (BIM), or .dwg/.dxf (with Gemini).";
     }
 
       if (elementsJson && supportedForReuse) {

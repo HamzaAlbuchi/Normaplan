@@ -25,5 +25,7 @@ export const config = {
   getAdminEmails,
   /** Google Gemini API key for PDF analysis. When set, PDFs use Gemini instead of pdf-parse. */
   geminiApiKey: process.env.GEMINI_API_KEY || "",
+  /** ConvertAPI secret for DWG/DXF → PDF conversion. When set, DWG/DXF are converted to PDF before Gemini. Free tier: 250 conversions at convertapi.com */
+  convertApiSecret: process.env.CONVERTAPI_SECRET || "",
   analysisCache: getAnalysisCacheConfig(),
 };

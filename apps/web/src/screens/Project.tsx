@@ -306,14 +306,14 @@ export default function Project() {
         <Card className="mb-8">
           <CardHeader
             title="Plan hochladen"
-            description="JSON-, PDF- oder IFC/BIM-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege)."
+            description="JSON-, PDF-, IFC/BIM- oder DWG/DXF-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege). DWG/DXF erfordert GEMINI_API_KEY und CONVERTAPI_SECRET."
           />
           <CardContent>
             <div>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept=".json,.pdf,.ifc"
+                accept=".json,.pdf,.ifc,.dwg,.dxf"
                 onChange={handleFileChange}
                 disabled={uploading}
                 className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
