@@ -63,6 +63,9 @@ export default function ViolationDetailDrawer({
         <div className="flex-1 overflow-y-auto p-6">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
+              {violation.ruleId?.startsWith("ai-gemini-") && (
+                <Badge variant="info" className="text-[10px]">AI</Badge>
+              )}
               <Badge variant={severityBadgeVariant(violation.severity)}>{severityLabel}</Badge>
               <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
             </div>

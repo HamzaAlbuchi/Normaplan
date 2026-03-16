@@ -10,4 +10,6 @@ export const config = {
   uploadDir: process.env.UPLOAD_DIR || "./uploads",
   databaseUrl: process.env.DATABASE_URL!,
   getAdminEmails,
+  /** Google Gemini API key for PDF analysis. When set, PDFs use Gemini instead of pdf-parse. */
+  geminiApiKey: process.env.GEMINI_API_KEY || "",
 };

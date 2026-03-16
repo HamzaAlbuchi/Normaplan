@@ -8,6 +8,7 @@ import { requireAuth } from "../auth.js";
 import { canWorkOnProject, listAccessibleProjectIds } from "../rbac.js";
 import { config } from "../config.js";
 import { parsePlanFromJson } from "../parser/mockParser.js";
+import { parsePlanFromPdfWithContext } from "../parser/geminiParser.js";
 import { parsePlanFromPdf } from "../parser/pdfParser.js";
 import { parsePlanFromIfc } from "../parser/ifcParser.js";
 
@@ -63,7 +64,21 @@ export async function planRoutes(app: FastifyInstance) {
       }
     } else if (ext === ".pdf") {
       try {
-        const elements = await parsePlanFromPdf(buf);
+        const context = {
+          zipCode: project.zipCode,
+          state: project.state,
+          projectType: project.projectType,
+        };
+        let elements;
+        try {
+          elements = await parsePlanFromPdfWithContext(buf, context, config.geminiApiKey);
+        } catch (geminiErr) {
+          if (config.geminiApiKey?.trim()) {
+            elements = await parsePlanFromPdf(buf);
+          } else {
+            throw geminiErr;
+          }
+        }
         elementsJson = JSON.stringify(elements);
         status = "ready";
       } catch (e) {

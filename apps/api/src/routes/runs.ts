@@ -3,7 +3,9 @@ import { prisma } from "../db.js";
 import { requireAuth } from "../auth.js";
 import { canWorkOnProject } from "../rbac.js";
 import { nanoid } from "nanoid";
+import { config } from "../config.js";
 import { runRules } from "../rules/index.js";
+import { fetchAiViolationsFromGemini } from "../parser/geminiParser.js";
 import type { PlanElements, RuleViolation } from "../types.js";
 
 export async function runRoutes(app: FastifyInstance) {
@@ -35,11 +37,25 @@ export async function runRoutes(app: FastifyInstance) {
 
     const elements = JSON.parse(plan.elementsJson) as PlanElements;
     const runId = nanoid();
-    const { violations, ruleVersion } = runRules(elements, {
+    const { violations: ruleViolations, ruleVersion } = runRules(elements, {
       runId,
       planId: plan.id,
       state: plan.project.state,
     });
+
+    let violations: RuleViolation[] = [...ruleViolations];
+    if (config.geminiApiKey?.trim()) {
+      const aiViolations = await fetchAiViolationsFromGemini(
+        elements,
+        {
+          zipCode: plan.project.zipCode,
+          state: plan.project.state,
+          projectType: plan.project.projectType,
+        },
+        config.geminiApiKey
+      );
+      violations = [...violations, ...aiViolations];
+    }
 
     const warningCount = violations.filter((v: RuleViolation) => v.severity === "warning").length;
     const errorCount = violations.filter((v: RuleViolation) => v.severity === "error").length;

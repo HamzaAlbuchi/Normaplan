@@ -55,6 +55,9 @@ function ViolationCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-xs font-medium text-slate-500">{v.ruleName}</span>
+            {v.ruleId?.startsWith("ai-gemini-") && (
+              <Badge variant="info" className="text-[10px]">AI</Badge>
+            )}
             <Badge variant={statusBadgeVariant(v.status)}>{STATUS_LABELS[v.status] ?? v.status}</Badge>
             <Badge variant={severityBadgeVariant(v.severity)}>{SEVERITY_LABELS[v.severity] ?? v.severity}</Badge>
           </div>

@@ -24,7 +24,7 @@ export default function Layout() {
   if (!token) return null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       <header className="sticky top-0 z-40 h-14 border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-full max-w-5xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-6">
@@ -55,9 +55,16 @@ export default function Layout() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+      <main className="flex-1 mx-auto max-w-5xl px-4 py-8 sm:px-6 w-full">
         <Outlet />
       </main>
+
+      <footer className="mt-auto border-t border-slate-200 bg-white py-3">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 flex items-center justify-between text-xs text-slate-500">
+          <span>BauPilot – Bauvorschriften-Check</span>
+          <span>v{__APP_VERSION__}</span>
+        </div>
+      </footer>
     </div>
   );
 }
