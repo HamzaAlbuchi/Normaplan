@@ -6,7 +6,11 @@
 
 import type { RunDetail } from "../api/client";
 import type { GroupedFinding } from "./reportHelpers";
-import { SEVERITY_LABELS } from "./reportHelpers";
+import {
+  SEVERITY_LABELS,
+  getSummaryByCategoryAndSeverity,
+  getRecommendedNextSteps,
+} from "./reportHelpers";
 
 export interface ReportData {
   plan: { name: string; fileName: string };
@@ -29,36 +33,11 @@ function severityClass(severity: string): string {
   return "report-sev-info";
 }
 
-function buildFindingCard(f: GroupedFinding, index: number): string {
-  const sevLabel = SEVERITY_LABELS[f.severity] ?? f.severity;
-  const values =
-    f.actualValue != null && f.requiredValue != null
-      ? `<span class="report-values">${f.actualValue} m → min. ${f.requiredValue} m</span>`
-      : "";
-  const elements =
-    f.elementIds.length > 0
-      ? `<p class="report-elements">Betroffene Elemente: ${escapeHtml(f.elementIds.join(", "))}</p>`
-      : "";
-  const ref = f.regulationRef
-    ? `<p class="report-ref">Referenz: ${escapeHtml(f.regulationRef)}</p>`
-    : "";
-  const suggestion = f.suggestion
-    ? `<p class="report-suggestion"><strong>Vorschlag:</strong> ${escapeHtml(f.suggestion)}</p>`
-    : "";
-  const countNote = f.count > 1 ? ` <span class="report-count">(${f.count}×)</span>` : "";
-
-  return `
-    <div class="report-finding ${severityClass(f.severity)}">
-      <div class="report-finding-header">
-        <span class="report-finding-num">${index}</span>
-        <span class="report-finding-sev">${escapeHtml(sevLabel)}</span>
-        <span class="report-finding-source">${escapeHtml(f.sourceType)}</span>
-        <span class="report-finding-cat">${escapeHtml(f.ruleName)}${countNote}</span>
-      </div>
-      <p class="report-finding-msg">${escapeHtml(f.message)}</p>
-      ${values}${elements}${ref}${suggestion}
-    </div>
-  `;
+function formatValue(val: number, required?: number): string {
+  if (required != null && required > 0 && required <= 1 && val <= 1)
+    return `${(val * 100).toFixed(1)}% → min. ${(required * 100).toFixed(1)}%`;
+  if (required != null) return `${val} → min. ${required}`;
+  return String(val);
 }
 
 function buildSummaryCards(
@@ -89,32 +68,124 @@ function buildSummaryCards(
   `;
 }
 
-function buildTopFindings(findings: GroupedFinding[]): string {
+function buildTop3Handlungsfelder(findings: GroupedFinding[]): string {
   if (findings.length === 0) return "";
+  const top3 = findings.slice(0, 3);
   return `
-    <section class="report-section report-page-break-after">
-      <h2 class="report-h2">Prioritäre Befunde</h2>
-      <p class="report-desc">Die wichtigsten zu prüfenden Punkte:</p>
-      ${findings.map((f, i) => buildFindingCard(f, i + 1)).join("")}
-    </section>
+    <div class="report-top3">
+      <h2 class="report-h2">Top 3 Handlungsfelder</h2>
+      <table class="report-top3-table">
+        <thead>
+          <tr>
+            <th>Nr.</th>
+            <th>Kategorie</th>
+            <th>Regel</th>
+            <th>Schwere</th>
+            <th>Anzahl</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${top3
+            .map(
+              (f, i) => `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${escapeHtml(f.category)}</td>
+              <td>${escapeHtml(f.ruleName)}</td>
+              <td><span class="report-sev-badge ${severityClass(f.severity)}">${escapeHtml(SEVERITY_LABELS[f.severity] ?? f.severity)}</span></td>
+              <td>${f.count}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
-function buildFindingsSection(
-  title: string,
-  findings: GroupedFinding[],
-  severity: string
-): string {
+function buildEmpfohleneSchritte(steps: string[]): string {
+  if (steps.length === 0) return "";
+  return `
+    <div class="report-next-steps">
+      <h2 class="report-h2">Empfohlene nächste Schritte</h2>
+      <ol class="report-steps-list">
+        ${steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}
+      </ol>
+    </div>
+  `;
+}
+
+function buildSummaryTable(rows: { category: string; error: number; warning: number; info: number }[]): string {
+  if (rows.length === 0) return "";
+  return `
+    <div class="report-summary-table-wrap">
+      <h2 class="report-h2">Übersicht nach Kategorie</h2>
+      <table class="report-summary-table">
+        <thead>
+          <tr>
+            <th>Kategorie</th>
+            <th>Kritisch</th>
+            <th>Warnung</th>
+            <th>Hinweis</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (r) => `
+            <tr>
+              <td>${escapeHtml(r.category)}</td>
+              <td>${r.error}</td>
+              <td>${r.warning}</td>
+              <td>${r.info}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function buildFindingsSection(findings: GroupedFinding[], severity: string): string {
   if (findings.length === 0) return "";
   const filtered = findings.filter((f) => f.severity === severity);
   if (filtered.length === 0) return "";
   const sevLabel = SEVERITY_LABELS[severity] ?? severity;
   return `
-    <section class="report-section report-finding-group">
+    <div class="report-finding-group">
       <h3 class="report-h3">${escapeHtml(sevLabel)}</h3>
-      <p class="report-finding-count">${filtered.length} ${filtered.length === 1 ? "Eintrag" : "Einträge"}</p>
-      ${filtered.map((f, i) => buildFindingCard(f, i + 1)).join("")}
-    </section>
+      <table class="report-findings-table">
+        <thead>
+          <tr>
+            <th>Regel</th>
+            <th>Kategorie</th>
+            <th>Anz.</th>
+            <th>Wert / Soll</th>
+            <th>Erklärung</th>
+            <th>Vorschlag</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filtered
+            .map(
+              (f) => `
+            <tr class="${severityClass(f.severity)}">
+              <td>${escapeHtml(f.ruleName)}</td>
+              <td>${escapeHtml(f.category)}</td>
+              <td>${f.count}</td>
+              <td>${f.worstActualValue != null && f.requiredValue != null ? formatValue(f.worstActualValue, f.requiredValue) : f.worstActualValue != null ? String(f.worstActualValue) : "—"}</td>
+              <td>${escapeHtml(f.message)}</td>
+              <td>${escapeHtml(f.suggestion ?? "—")}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -122,24 +193,12 @@ function buildFindingsBySource(
   ruleFindings: GroupedFinding[],
   aiFindings: GroupedFinding[]
 ): string {
-  const ruleErrors = buildFindingsSection(
-    "Regelbasierte Prüfung",
-    ruleFindings,
-    "error"
-  );
-  const ruleWarnings = buildFindingsSection(
-    "Regelbasierte Prüfung",
-    ruleFindings,
-    "warning"
-  );
-  const ruleInfo = buildFindingsSection(
-    "Regelbasierte Prüfung",
-    ruleFindings,
-    "info"
-  );
-  const aiErrors = buildFindingsSection("KI-Analyse", aiFindings, "error");
-  const aiWarnings = buildFindingsSection("KI-Analyse", aiFindings, "warning");
-  const aiInfo = buildFindingsSection("KI-Analyse", aiFindings, "info");
+  const ruleErrors = buildFindingsSection(ruleFindings, "error");
+  const ruleWarnings = buildFindingsSection(ruleFindings, "warning");
+  const ruleInfo = buildFindingsSection(ruleFindings, "info");
+  const aiErrors = buildFindingsSection(aiFindings, "error");
+  const aiWarnings = buildFindingsSection(aiFindings, "warning");
+  const aiInfo = buildFindingsSection(aiFindings, "info");
 
   const ruleSection =
     ruleErrors || ruleWarnings || ruleInfo
@@ -171,13 +230,46 @@ function buildFindingsBySource(
   `;
 }
 
-function buildAppendix(elementIds: string[]): string {
-  const unique = [...new Set(elementIds)].sort();
-  if (unique.length === 0) return "";
+function buildAppendix(findings: GroupedFinding[]): string {
+  const rows: { elementId: string; findingGroups: string[] }[] = [];
+  const elementToFindings = new Map<string, string[]>();
+  for (const f of findings) {
+    const label = `${f.ruleName} (${f.category})`;
+    for (const id of f.elementIds) {
+      const list = elementToFindings.get(id) ?? [];
+      if (!list.includes(label)) list.push(label);
+      elementToFindings.set(id, list);
+    }
+  }
+  for (const [id, groups] of elementToFindings) {
+    rows.push({ elementId: id, findingGroups: groups });
+  }
+  rows.sort((a, b) => a.elementId.localeCompare(b.elementId));
+  if (rows.length === 0) return "";
   return `
     <section class="report-section report-page-break-before">
-      <h2 class="report-h2">Anhang: Betroffene Element-IDs</h2>
-      <p class="report-appendix-list">${escapeHtml(unique.join(", "))}</p>
+      <h2 class="report-h2">Anhang: Betroffene Elemente</h2>
+      <p class="report-desc">Zuordnung der Element-IDs zu den gruppierten Befunden.</p>
+      <table class="report-appendix-table">
+        <thead>
+          <tr>
+            <th>Element-ID</th>
+            <th>Zugehörige Befunde</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rows
+            .map(
+              (r) => `
+            <tr>
+              <td class="report-appendix-id">${escapeHtml(r.elementId)}</td>
+              <td>${r.findingGroups.map((g) => escapeHtml(g)).join("; ")}</td>
+            </tr>
+          `
+            )
+            .join("")}
+        </tbody>
+      </table>
     </section>
   `;
 }
@@ -239,6 +331,7 @@ function getReportStyles(): string {
     .report-sev-info .report-finding-sev { background: #64748b; color: white; }
     .report-finding-source { font-size: 8pt; color: #64748b; margin-left: 4px; }
     .report-finding-cat { font-size: 9pt; color: #475569; }
+    .report-finding-rule { font-size: 9pt; color: #334155; margin-left: 4px; }
     .report-finding-msg { margin: 0 0 8px 0; font-size: 10pt; }
     .report-values { font-size: 9pt; color: #64748b; display: block; margin-bottom: 4px; }
     .report-elements { font-size: 9pt; color: #64748b; margin: 4px 0 0 0; }
@@ -249,7 +342,29 @@ function getReportStyles(): string {
     .report-source-ai { padding: 16px; border: 1px solid #c7d2fe; background: #eef2ff; border-radius: 8px; }
     .report-methodology { background: #f8fafc; padding: 16px; border-radius: 6px; }
     .report-methodology-text { font-size: 9pt; color: #64748b; margin: 0; }
-    .report-appendix-list { font-size: 9pt; color: #64748b; word-break: break-all; }
+    .report-executive { margin-bottom: 24px; }
+    .report-top3 { margin-bottom: 20px; }
+    .report-top3-table, .report-summary-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    .report-top3-table th, .report-top3-table td, .report-summary-table th, .report-summary-table td { padding: 6px 8px; text-align: left; border: 1px solid #e2e8f0; }
+    .report-top3-table th, .report-summary-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .report-summary-table-wrap { margin-bottom: 20px; }
+    .report-next-steps { margin-bottom: 20px; }
+    .report-steps-list { margin: 0; padding-left: 20px; font-size: 10pt; color: #334155; }
+    .report-steps-list li { margin-bottom: 4px; }
+    .report-sev-badge { font-size: 8pt; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
+    .report-sev-badge.report-sev-error { background: #dc2626; color: white; }
+    .report-sev-badge.report-sev-warning { background: #d97706; color: white; }
+    .report-sev-badge.report-sev-info { background: #64748b; color: white; }
+    .report-findings-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    .report-findings-table th, .report-findings-table td { padding: 8px 10px; text-align: left; border: 1px solid #e2e8f0; vertical-align: top; }
+    .report-findings-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .report-findings-table tr.report-sev-error td { background: #fef2f2; }
+    .report-findings-table tr.report-sev-warning td { background: #fffbeb; }
+    .report-findings-table tr.report-sev-info td { background: #f8fafc; }
+    .report-appendix-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+    .report-appendix-table th, .report-appendix-table td { padding: 6px 8px; text-align: left; border: 1px solid #e2e8f0; }
+    .report-appendix-table th { background: #f8fafc; font-weight: 600; color: #475569; }
+    .report-appendix-id { font-family: ui-monospace, monospace; font-size: 8pt; }
     .report-footer {
       margin-top: 32px; padding-top: 12px; border-top: 1px solid #e2e8f0;
       font-size: 8pt; color: #94a3b8; text-align: center;
@@ -304,7 +419,8 @@ export function buildReportHtml(
         year: "numeric",
       });
 
-  const allElementIds = groupedFindings.flatMap((f) => f.elementIds);
+  const summaryRows = getSummaryByCategoryAndSeverity(groupedFindings);
+  const nextSteps = getRecommendedNextSteps(groupedFindings);
 
   const body = `
     <div class="report-page">
@@ -325,13 +441,17 @@ export function buildReportHtml(
 
       ${buildSummaryCards(total, critical, warnings, notes)}
 
-      ${buildTopFindings(topFindings)}
+      <div class="report-executive report-page-break-after">
+        ${buildTop3Handlungsfelder(topFindings)}
+        ${buildEmpfohleneSchritte(nextSteps)}
+        ${buildSummaryTable(summaryRows)}
+      </div>
 
       ${buildFindingsBySource(ruleFindings, aiFindings)}
 
       ${buildMethodology()}
 
-      ${buildAppendix(allElementIds)}
+      ${buildAppendix(groupedFindings)}
 
       ${buildFooter()}
     </div>
