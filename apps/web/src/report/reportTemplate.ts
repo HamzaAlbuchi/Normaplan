@@ -71,6 +71,7 @@ function buildSummaryCards(
 function buildTop3Handlungsfelder(findings: GroupedFinding[]): string {
   if (findings.length === 0) return "";
   const top3 = findings.slice(0, 3);
+  const hasSourceBadge = findings.some((f) => f.sourceBadge);
   return `
     <div class="report-top3">
       <h2 class="report-h2">Top 3 Handlungsfelder</h2>
@@ -80,6 +81,7 @@ function buildTop3Handlungsfelder(findings: GroupedFinding[]): string {
             <th>Nr.</th>
             <th>Kategorie</th>
             <th>Regel</th>
+            ${hasSourceBadge ? "<th>Quelle</th>" : ""}
             <th>Schwere</th>
             <th>Anzahl</th>
           </tr>
@@ -92,6 +94,7 @@ function buildTop3Handlungsfelder(findings: GroupedFinding[]): string {
               <td>${i + 1}</td>
               <td>${escapeHtml(f.category)}</td>
               <td>${escapeHtml(f.ruleName)}</td>
+              ${hasSourceBadge ? `<td>${escapeHtml(f.sourceBadge ?? f.sourceType)}</td>` : ""}
               <td><span class="report-sev-badge ${severityClass(f.severity)}">${escapeHtml(SEVERITY_LABELS[f.severity] ?? f.severity)}</span></td>
               <td>${f.count}</td>
             </tr>
@@ -154,6 +157,7 @@ function buildFindingsSection(findings: GroupedFinding[], severity: string): str
   const filtered = findings.filter((f) => f.severity === severity);
   if (filtered.length === 0) return "";
   const sevLabel = SEVERITY_LABELS[severity] ?? severity;
+  const hasSourceBadge = filtered.some((f) => f.sourceBadge);
   return `
     <div class="report-finding-group">
       <h3 class="report-h3">${escapeHtml(sevLabel)}</h3>
@@ -162,6 +166,7 @@ function buildFindingsSection(findings: GroupedFinding[], severity: string): str
           <tr>
             <th>Regel</th>
             <th>Kategorie</th>
+            ${hasSourceBadge ? "<th>Quelle</th>" : ""}
             <th>Anz.</th>
             <th>Wert / Soll</th>
             <th>Erklärung</th>
@@ -175,6 +180,7 @@ function buildFindingsSection(findings: GroupedFinding[], severity: string): str
             <tr class="${severityClass(f.severity)}">
               <td>${escapeHtml(f.ruleName)}</td>
               <td>${escapeHtml(f.category)}</td>
+              ${hasSourceBadge ? `<td><span class="report-source-badge">${escapeHtml(f.sourceBadge ?? f.sourceType)}</span></td>` : ""}
               <td>${f.count}</td>
               <td>${f.worstActualValue != null && f.requiredValue != null ? formatValue(f.worstActualValue, f.requiredValue) : f.worstActualValue != null ? String(f.worstActualValue) : "—"}</td>
               <td>${escapeHtml(f.message)}</td>
@@ -189,43 +195,19 @@ function buildFindingsSection(findings: GroupedFinding[], severity: string): str
   `;
 }
 
-function buildFindingsBySource(
-  ruleFindings: GroupedFinding[],
-  aiFindings: GroupedFinding[]
-): string {
-  const ruleErrors = buildFindingsSection(ruleFindings, "error");
-  const ruleWarnings = buildFindingsSection(ruleFindings, "warning");
-  const ruleInfo = buildFindingsSection(ruleFindings, "info");
-  const aiErrors = buildFindingsSection(aiFindings, "error");
-  const aiWarnings = buildFindingsSection(aiFindings, "warning");
-  const aiInfo = buildFindingsSection(aiFindings, "info");
-
-  const ruleSection =
-    ruleErrors || ruleWarnings || ruleInfo
-      ? `
-    <div class="report-source-block">
-      <h2 class="report-h2">Regelbasierte Prüfung</h2>
-      <p class="report-desc">Automatisierte Prüfung gegen definierte Bauvorschriften (MBO, DIN, LBO).</p>
-      ${ruleErrors}${ruleWarnings}${ruleInfo}
-    </div>
-  `
-      : "";
-
-  const aiSection =
-    aiErrors || aiWarnings || aiInfo
-      ? `
-    <div class="report-source-block report-source-ai">
-      <h2 class="report-h2">KI-Analyse</h2>
-      <p class="report-desc">Zusätzliche Hinweise durch KI (keine rechtliche Bewertung. Bitte manuell prüfen.)</p>
-      ${aiErrors}${aiWarnings}${aiInfo}
-    </div>
-  `
-      : "";
+function buildFindingsUnified(findings: GroupedFinding[]): string {
+  const errors = buildFindingsSection(findings, "error");
+  const warnings = buildFindingsSection(findings, "warning");
+  const info = buildFindingsSection(findings, "info");
+  if (!errors && !warnings && !info) return "";
 
   return `
     <section class="report-section report-page-break-before">
       <h2 class="report-h2">Detaillierte Befunde</h2>
-      ${ruleSection}${aiSection}
+      <p class="report-desc">Kanonisch zusammengeführte Befunde aus regelbasierter Prüfung und KI-Analyse. Quelle: Regelbasiert, AI-gestützt (Regel + KI), AI-only.</p>
+      <div class="report-source-block">
+        ${errors}${warnings}${info}
+      </div>
     </section>
   `;
 }
@@ -353,6 +335,7 @@ function getReportStyles(): string {
     .report-steps-list li { margin-bottom: 4px; }
     .report-sev-badge { font-size: 8pt; padding: 2px 6px; border-radius: 4px; font-weight: 600; }
     .report-sev-badge.report-sev-error { background: #dc2626; color: white; }
+    .report-source-badge { font-size: 8pt; padding: 2px 6px; border-radius: 4px; background: #e2e8f0; color: #475569; }
     .report-sev-badge.report-sev-warning { background: #d97706; color: white; }
     .report-sev-badge.report-sev-info { background: #64748b; color: white; }
     .report-findings-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
@@ -399,8 +382,6 @@ export function buildReportHtml(
 ): string {
   const { plan, run, logoUrl } = data;
   const violations = Array.isArray(run.violations) ? run.violations : [];
-  const ruleFindings = groupedFindings.filter((f) => f.sourceType === "Regelbasiert");
-  const aiFindings = groupedFindings.filter((f) => f.sourceType === "KI-gestützt");
 
   const total = run.violationCount ?? 0;
   const critical = run.errorCount ?? 0;
@@ -447,7 +428,7 @@ export function buildReportHtml(
         ${buildSummaryTable(summaryRows)}
       </div>
 
-      ${buildFindingsBySource(ruleFindings, aiFindings)}
+      ${buildFindingsUnified(groupedFindings)}
 
       ${buildMethodology()}
 

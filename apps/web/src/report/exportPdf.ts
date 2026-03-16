@@ -4,7 +4,13 @@
  */
 
 import type { RunDetail } from "../api/client";
-import { groupSimilarFindings, getTopPriorityFindings } from "./reportHelpers";
+import { toCanonicalFindings } from "../findings/CanonicalFindingMapper";
+import {
+  canonicalToGroupedFindings,
+  getTopPriorityFindingsFromGrouped,
+  getSummaryByCategoryAndSeverity,
+  getRecommendedNextSteps,
+} from "./reportHelpers";
 import { buildReportHtml } from "./reportTemplate";
 
 export interface ExportPdfParams {
@@ -15,14 +21,15 @@ export interface ExportPdfParams {
 
 /**
  * Render the report in a hidden iframe and trigger print dialog.
- * Uses a dedicated report template - does not print the main app.
+ * Uses canonical merged findings (deduplicated rule + AI).
  */
 export function exportReportAsPdf(params: ExportPdfParams): void {
   const { plan, run } = params;
   const violations = Array.isArray(run.violations) ? run.violations : [];
 
-  const groupedFindings = groupSimilarFindings(violations);
-  const topFindings = getTopPriorityFindings(violations, 3);
+  const canonical = toCanonicalFindings(violations);
+  const groupedFindings = canonicalToGroupedFindings(canonical);
+  const topFindings = getTopPriorityFindingsFromGrouped(groupedFindings, 3);
 
   const logoUrl =
     typeof window !== "undefined"

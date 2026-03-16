@@ -7,6 +7,9 @@ import HistoryModal from "../components/HistoryModal";
 import RunAnalysisLoading from "../components/RunAnalysisLoading";
 import { useAuthStore } from "../store/auth";
 import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
+import { toCanonicalFindings } from "../findings/CanonicalFindingMapper";
+import type { CanonicalFinding } from "../findings/canonicalTypes";
+import { SOURCE_BADGE_LABELS } from "../findings/canonicalTypes";
 
 const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
@@ -14,18 +17,14 @@ const SEVERITY_LABELS: Record<string, string> = {
   info: "Hinweise / Empfehlungen",
 };
 
-function isAiViolation(v: Violation): boolean {
-  return v.ruleId?.startsWith("ai-gemini-") ?? false;
-}
-
-function groupViolations(violations: Violation[]): { error: Violation[]; warning: Violation[]; info: Violation[] } {
-  const error: Violation[] = [];
-  const warning: Violation[] = [];
-  const info: Violation[] = [];
-  for (const v of violations) {
-    if (v.severity === "error") error.push(v);
-    else if (v.severity === "warning") warning.push(v);
-    else info.push(v);
+function groupCanonical(findings: CanonicalFinding[]): { error: CanonicalFinding[]; warning: CanonicalFinding[]; info: CanonicalFinding[] } {
+  const error: CanonicalFinding[] = [];
+  const warning: CanonicalFinding[] = [];
+  const info: CanonicalFinding[] = [];
+  for (const f of findings) {
+    if (f.severity === "error") error.push(f);
+    else if (f.severity === "warning") warning.push(f);
+    else info.push(f);
   }
   return { error, warning, info };
 }
@@ -36,89 +35,94 @@ const severityBadgeVariant = (s: string): "critical" | "warning" | "info" | "def
 const statusBadgeVariant = (s: string): "default" | "warning" | "success" | "info" =>
   s === "deferred" ? "warning" : s === "resolved" ? "success" : s === "confirmed" ? "info" : "default";
 
-function ViolationCard({
-  v,
+function CanonicalFindingCard({
+  f,
+  violationById,
   onDismiss,
   onDefer,
   onShowHistory,
   isManager,
 }: {
-  v: Violation;
-  onDismiss?: (id: string) => void;
-  onDefer?: (id: string) => void;
+  f: CanonicalFinding;
+  violationById: Map<string, Violation>;
+  onDismiss?: (ids: string[]) => void;
+  onDefer?: (ids: string[]) => void;
   onShowHistory?: (id: string) => void;
   isManager?: boolean;
 }) {
-  const status = v.status ?? "open";
-  const canReview = status === "open" && v.id;
+  const primaryViolation = violationById.get(f.primaryRawId);
+  const status = primaryViolation?.status ?? "open";
+  const canReview = status === "open" && f.rawSourceFindingIds.length > 0;
   const severityClass =
-    v.severity === "error"
+    f.severity === "error"
       ? "border-l-4 border-red-500 bg-red-50/30"
-      : v.severity === "warning"
+      : f.severity === "warning"
         ? "border-l-4 border-amber-500 bg-amber-50/30"
         : "border-l-4 border-slate-300 bg-slate-50/50";
+
+  const sourceLabel = SOURCE_BADGE_LABELS[f.primarySource];
 
   return (
     <div className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm ${severityClass}`}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase text-slate-500">{v.ruleName}</span>
-            {v.ruleId?.startsWith("ai-gemini-") && (
-              <Badge variant="info" className="text-[10px]">AI</Badge>
-            )}
+            <span className="text-xs font-medium uppercase text-slate-500">{f.title}</span>
+            <Badge variant={f.primarySource === "AI_ONLY" ? "info" : "default"} className="text-[10px]">
+              {sourceLabel}
+            </Badge>
             {status !== "open" && (
               <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
             )}
-            <Badge variant={severityBadgeVariant(v.severity)}>
-              {v.severity === "error" ? "Kritisch" : v.severity === "warning" ? "Warnung" : "Hinweis"}
+            <Badge variant={severityBadgeVariant(f.severity)}>
+              {f.severity === "error" ? "Kritisch" : f.severity === "warning" ? "Warnung" : "Hinweis"}
             </Badge>
           </div>
-          <p className="mt-2 text-slate-800">{v.message}</p>
-          {v.suggestion && (
+          <p className="mt-2 text-slate-800">{f.description}</p>
+          {f.suggestion && (
             <p className="mt-2 text-sm text-slate-600">
-              <strong>Vorschlag:</strong> {v.suggestion}
+              <strong>Vorschlag:</strong> {f.suggestion}
             </p>
           )}
-          {v.regulationRef && (
-            <p className="mt-1 text-xs text-slate-400">Referenz: {v.regulationRef}</p>
+          {f.reference && (
+            <p className="mt-1 text-xs text-slate-400">Referenz: {f.reference}</p>
           )}
         </div>
-        {v.actualValue != null && v.requiredValue != null && (
+        {f.measuredValue != null && f.requiredValue != null && (
           <div className="text-right text-sm whitespace-nowrap">
-            <span className="text-slate-500">{v.actualValue} m</span>
+            <span className="text-slate-500">{f.measuredValue} m</span>
             <span className="mx-1">→</span>
-            <span className="text-slate-700">min. {v.requiredValue} m</span>
+            <span className="text-slate-700">min. {f.requiredValue} m</span>
           </div>
         )}
       </div>
-      {Array.isArray(v.elementIds) && v.elementIds.length > 0 && (
-        <p className="mt-2 text-xs text-slate-500">Betroffene Elemente: {v.elementIds.join(", ")}</p>
+      {f.affectedElementIds.length > 0 && (
+        <p className="mt-2 text-xs text-slate-500">Betroffene Elemente: {f.affectedElementIds.join(", ")}</p>
       )}
-      {(status === "dismissed" || status === "deferred") && (v.reason || v.comment) && (
+      {(status === "dismissed" || status === "deferred") && primaryViolation && (primaryViolation.reason || primaryViolation.comment) && (
         <p className="mt-2 text-xs text-slate-500">
-          {v.reason && <span>Grund: {REASON_LABELS[v.reason] ?? v.reason}</span>}
-          {v.comment && <span className="block mt-0.5">Kommentar: {v.comment}</span>}
-          {v.decidedAt && (
+          {primaryViolation.reason && <span>Grund: {REASON_LABELS[primaryViolation.reason] ?? primaryViolation.reason}</span>}
+          {primaryViolation.comment && <span className="block mt-0.5">Kommentar: {primaryViolation.comment}</span>}
+          {primaryViolation.decidedAt && (
             <span className="block mt-0.5 text-slate-400">
-              Entscheidung: {new Date(v.decidedAt).toLocaleString("de-DE")}
+              Entscheidung: {new Date(primaryViolation.decidedAt).toLocaleString("de-DE")}
             </span>
           )}
         </p>
       )}
       <div className="mt-3 flex flex-wrap gap-2 no-print">
         {canReview && onDismiss && (
-          <Button variant="secondary" size="sm" onClick={() => onDismiss(v.id!)}>
+          <Button variant="secondary" size="sm" onClick={() => onDismiss(f.rawSourceFindingIds)}>
             Abweisen
           </Button>
         )}
         {canReview && onDefer && (
-          <Button variant="secondary" size="sm" onClick={() => onDefer(v.id!)}>
+          <Button variant="secondary" size="sm" onClick={() => onDefer(f.rawSourceFindingIds)}>
             Zurückstellen
           </Button>
         )}
-        {isManager && v.id && onShowHistory && (
-          <Button variant="secondary" size="sm" onClick={() => onShowHistory(v.id!)}>
+        {isManager && f.primaryRawId && onShowHistory && (
+          <Button variant="secondary" size="sm" onClick={() => onShowHistory(f.primaryRawId)}>
             Verlauf
           </Button>
         )}
@@ -127,11 +131,12 @@ function ViolationCard({
   );
 }
 
-function ViolationSection({
+function FindingSection({
   title,
   count,
-  violations,
+  findings,
   severity,
+  violationById,
   onDismiss,
   onDefer,
   onShowHistory,
@@ -139,14 +144,15 @@ function ViolationSection({
 }: {
   title: string;
   count: number;
-  violations: Violation[];
+  findings: CanonicalFinding[];
   severity: "error" | "warning" | "info";
-  onDismiss?: (id: string) => void;
-  onDefer?: (id: string) => void;
+  violationById: Map<string, Violation>;
+  onDismiss?: (ids: string[]) => void;
+  onDefer?: (ids: string[]) => void;
   onShowHistory?: (id: string) => void;
   isManager?: boolean;
 }) {
-  if (violations.length === 0) return null;
+  if (findings.length === 0) return null;
   const border =
     severity === "error"
       ? "border-red-200"
@@ -164,10 +170,11 @@ function ViolationSection({
       <h3 className="text-base font-semibold text-slate-800 mb-0.5">{title}</h3>
       <p className="text-sm text-slate-600 mb-4">{count} {count === 1 ? "Eintrag" : "Einträge"}</p>
       <ul className="space-y-4">
-        {violations.map((v, i) => (
-          <li key={v.id ?? i}>
-            <ViolationCard
-              v={v}
+        {findings.map((f, i) => (
+          <li key={f.canonicalFindingId}>
+            <CanonicalFindingCard
+              f={f}
+              violationById={violationById}
               onDismiss={onDismiss}
               onDefer={onDefer}
               onShowHistory={onShowHistory}
@@ -192,16 +199,15 @@ function ReportWithExport({
   plan: { name: string; fileName: string };
   run: RunDetail;
   planId: string;
-  onDismiss?: (id: string) => void;
-  onDefer?: (id: string) => void;
+  onDismiss?: (ids: string[]) => void;
+  onDefer?: (ids: string[]) => void;
   onShowHistory?: (id: string) => void;
   isManager?: boolean;
 }) {
   const violations = Array.isArray(run.violations) ? run.violations : [];
-  const ruleViolations = violations.filter((v) => !isAiViolation(v));
-  const aiViolations = violations.filter((v) => isAiViolation(v));
-  const groupedRule = groupViolations(ruleViolations);
-  const groupedAi = groupViolations(aiViolations);
+  const canonical = toCanonicalFindings(violations);
+  const grouped = groupCanonical(canonical);
+  const violationById = new Map(violations.filter((v): v is Violation & { id: string } => !!v.id).map((v) => [v.id, v]));
 
   const handleExportPdf = () => {
     import("../report/exportPdf").then(({ exportReportAsPdf }) => {
@@ -218,7 +224,7 @@ function ReportWithExport({
             <h2 className="font-semibold text-slate-800">Prüfbericht – {plan.name}</h2>
             <p className="text-sm text-slate-500 mt-1">
             Geprüft am {run.checkedAt ? new Date(run.checkedAt).toLocaleString("de-DE") : "—"} ·{" "}
-            {run.violationCount ?? 0} mögliche Verstöße ({run.errorCount ?? 0} Kritisch, {run.warningCount ?? 0} Warnungen, {groupedRule.info.length + groupedAi.info.length} Hinweise)
+            {canonical.length} Befunde ({grouped.error.length} Kritisch, {grouped.warning.length} Warnungen, {grouped.info.length} Hinweise)
             </p>
           </div>
         </div>
@@ -239,98 +245,52 @@ function ReportWithExport({
             Abgedeckte Prüfregeln anzeigen
           </Link>
         </p>
-        {violations.length === 0 ? (
-          <p className="text-slate-600">Keine Verstöße gefunden.</p>
+        {canonical.length === 0 ? (
+          <p className="text-slate-600">Keine Befunde gefunden.</p>
         ) : (
-          <div className="space-y-10">
-            {ruleViolations.length > 0 && (
-              <div className="space-y-4">
-                <div className="flex items-center gap-2 pb-2 border-b-2 border-slate-300">
-                  <h3 className="text-lg font-semibold text-slate-800">Regelbasierte Prüfung</h3>
-                  <Badge variant="default">{ruleViolations.length} Befunde</Badge>
-                </div>
-                <p className="text-xs text-slate-500 -mt-2">
-                  Automatisierte Prüfung gegen definierte Bauvorschriften (MBO, DIN, LBO).
-                </p>
-                <div className="space-y-6">
-                  <ViolationSection
-                    title={SEVERITY_LABELS.error}
-                    count={groupedRule.error.length}
-                    violations={groupedRule.error}
-                    severity="error"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                  <ViolationSection
-                    title={SEVERITY_LABELS.warning}
-                    count={groupedRule.warning.length}
-                    violations={groupedRule.warning}
-                    severity="warning"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                  <ViolationSection
-                    title={SEVERITY_LABELS.info}
-                    count={groupedRule.info.length}
-                    violations={groupedRule.info}
-                    severity="info"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                </div>
-              </div>
-            )}
-
-            {aiViolations.length > 0 && (
-              <div className="space-y-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/30 p-6">
-                <div className="flex items-center gap-2 pb-2 border-b-2 border-indigo-300">
-                  <h3 className="text-lg font-semibold text-indigo-900">KI-Analyse</h3>
-                  <Badge variant="info">AI</Badge>
-                  <Badge variant="default">{aiViolations.length} Befunde</Badge>
-                </div>
-                <p className="text-xs text-indigo-700/80 -mt-2">
-                  Zusätzliche Hinweise durch KI (keine rechtliche Bewertung. Bitte manuell prüfen.)
-                </p>
-                <div className="space-y-6">
-                  <ViolationSection
-                    title={SEVERITY_LABELS.error}
-                    count={groupedAi.error.length}
-                    violations={groupedAi.error}
-                    severity="error"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                  <ViolationSection
-                    title={SEVERITY_LABELS.warning}
-                    count={groupedAi.warning.length}
-                    violations={groupedAi.warning}
-                    severity="warning"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                  <ViolationSection
-                    title={SEVERITY_LABELS.info}
-                    count={groupedAi.info.length}
-                    violations={groupedAi.info}
-                    severity="info"
-                    onDismiss={onDismiss}
-                    onDefer={onDefer}
-                    onShowHistory={onShowHistory}
-                    isManager={isManager}
-                  />
-                </div>
-              </div>
-            )}
+          <div className="space-y-6">
+            <div className="flex items-center gap-2 pb-2 border-b-2 border-slate-300">
+              <h3 className="text-lg font-semibold text-slate-800">Befunde (kanonisch zusammengeführt)</h3>
+              <Badge variant="default">{canonical.length} Befunde</Badge>
+            </div>
+            <p className="text-xs text-slate-500 -mt-2">
+              Regelbasierte Prüfung und KI-Analyse zusammengeführt. Quelle: Regelbasiert, AI-gestützt (Regel + KI), AI-only.
+            </p>
+            <div className="space-y-6">
+              <FindingSection
+                title={SEVERITY_LABELS.error}
+                count={grouped.error.length}
+                findings={grouped.error}
+                severity="error"
+                violationById={violationById}
+                onDismiss={onDismiss}
+                onDefer={onDefer}
+                onShowHistory={onShowHistory}
+                isManager={isManager}
+              />
+              <FindingSection
+                title={SEVERITY_LABELS.warning}
+                count={grouped.warning.length}
+                findings={grouped.warning}
+                severity="warning"
+                violationById={violationById}
+                onDismiss={onDismiss}
+                onDefer={onDefer}
+                onShowHistory={onShowHistory}
+                isManager={isManager}
+              />
+              <FindingSection
+                title={SEVERITY_LABELS.info}
+                count={grouped.info.length}
+                findings={grouped.info}
+                severity="info"
+                violationById={violationById}
+                onDismiss={onDismiss}
+                onDefer={onDefer}
+                onShowHistory={onShowHistory}
+                isManager={isManager}
+              />
+            </div>
           </div>
         )}
       </div>
@@ -342,7 +302,7 @@ export default function PlanReport() {
   const { planId } = useParams<{ planId: string }>();
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
-  const [reviewViolationId, setReviewViolationId] = useState<string | null>(null);
+  const [reviewViolationIds, setReviewViolationIds] = useState<string[]>([]);
   const [reviewAction, setReviewAction] = useState<"dismiss" | "defer">("dismiss");
   const [historyViolationId, setHistoryViolationId] = useState<string | null>(null);
 
@@ -376,27 +336,30 @@ export default function PlanReport() {
   });
 
   const reviewMutation = useMutation({
-    mutationFn: ({ id, action, reason, comment }: { id: string; action: "dismiss" | "defer"; reason: string; comment?: string }) =>
-      violationsApi.update(id, { action, reason, comment }),
+    mutationFn: async ({ ids, action, reason, comment }: { ids: string[]; action: "dismiss" | "defer"; reason: string; comment?: string }) => {
+      for (const id of ids) {
+        await violationsApi.update(id, { action, reason, comment });
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["run", runId] });
       queryClient.invalidateQueries({ queryKey: ["plan", planId] });
       queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
-      setReviewViolationId(null);
+      setReviewViolationIds([]);
     },
   });
 
-  const handleDismiss = (id: string) => {
-    setReviewViolationId(id);
+  const handleDismiss = (ids: string[]) => {
+    setReviewViolationIds(ids);
     setReviewAction("dismiss");
   };
-  const handleDefer = (id: string) => {
-    setReviewViolationId(id);
+  const handleDefer = (ids: string[]) => {
+    setReviewViolationIds(ids);
     setReviewAction("defer");
   };
   const handleReviewSubmit = (reason: string, comment?: string) => {
-    if (!reviewViolationId) return;
-    reviewMutation.mutate({ id: reviewViolationId, action: reviewAction, reason, comment });
+    if (reviewViolationIds.length === 0) return;
+    reviewMutation.mutate({ ids: reviewViolationIds, action: reviewAction, reason, comment });
   };
 
   const hasRun = !!run && !runMutation.isPending;
@@ -479,8 +442,8 @@ export default function PlanReport() {
                 isManager={true}
               />
               <ReviewModal
-                isOpen={!!reviewViolationId}
-                onClose={() => setReviewViolationId(null)}
+                isOpen={reviewViolationIds.length > 0}
+                onClose={() => setReviewViolationIds([])}
                 action={reviewAction}
                 onSubmit={handleReviewSubmit}
                 isPending={reviewMutation.isPending}

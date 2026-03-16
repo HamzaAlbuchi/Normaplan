@@ -1,9 +1,11 @@
 /**
  * Report helpers for PDF export.
  * Transforms violation data for print-friendly presentation.
+ * Supports canonical merged findings (deduplicated rule + AI).
  */
 
 import type { Violation } from "../api/client";
+import type { CanonicalFinding } from "../findings/canonicalTypes";
 
 export const SEVERITY_ORDER = ["error", "warning", "info"] as const;
 export const SEVERITY_LABELS: Record<string, string> = {
@@ -116,6 +118,8 @@ export interface GroupedFinding {
   suggestion?: string;
   regulationRef?: string;
   sourceType: "Regelbasiert" | "KI-gestützt";
+  /** Source badge for canonical merged findings: Regelbasiert | AI-gestützt | AI-only */
+  sourceBadge?: "Regelbasiert" | "AI-gestützt" | "AI-only";
   category: string;
   elementIds: string[];
   /** Worst measured value in the group (e.g. smallest for "min width" rules) */
@@ -181,6 +185,45 @@ export function getTopPriorityFindings(
 ): GroupedFinding[] {
   const grouped = groupSimilarFindings(violations);
   return grouped.slice(0, limit);
+}
+
+/** Top N from already-grouped findings (for canonical flow). */
+export function getTopPriorityFindingsFromGrouped(
+  findings: GroupedFinding[],
+  limit = 3
+): GroupedFinding[] {
+  return [...findings]
+    .sort((a, b) => {
+      const ai = SEVERITY_ORDER.indexOf(a.severity as (typeof SEVERITY_ORDER)[number]);
+      const bi = SEVERITY_ORDER.indexOf(b.severity as (typeof SEVERITY_ORDER)[number]);
+      if (ai !== bi) return ai - bi;
+      return (b.count ?? 1) - (a.count ?? 1);
+    })
+    .slice(0, limit);
+}
+
+/** Convert canonical findings to GroupedFinding for report. */
+export function canonicalToGroupedFindings(canonical: CanonicalFinding[]): GroupedFinding[] {
+  const sourceBadgeMap = {
+    RULE_BASED: "Regelbasiert" as const,
+    AI_ASSISTED: "AI-gestützt" as const,
+    AI_ONLY: "AI-only" as const,
+  };
+  return canonical.map((c) => ({
+    ruleId: c.canonicalFindingId,
+    ruleName: c.title,
+    severity: c.severity,
+    message: c.description,
+    suggestion: c.suggestion,
+    regulationRef: c.reference,
+    sourceType: c.primarySource === "AI_ONLY" ? "KI-gestützt" : "Regelbasiert",
+    sourceBadge: sourceBadgeMap[c.primarySource],
+    category: c.category,
+    elementIds: c.affectedElementIds,
+    worstActualValue: c.measuredValue,
+    requiredValue: c.requiredValue,
+    count: c.sourceCount,
+  }));
 }
 
 /** Build summary counts by category and severity for the executive summary table. */
