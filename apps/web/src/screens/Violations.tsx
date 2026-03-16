@@ -124,10 +124,29 @@ export default function Violations() {
     queryFn: () => projectsApi.list(),
   });
 
-  const { data: ruleTypes = [] } = useQuery({
+  const { data: ruleTypesRaw = [] } = useQuery({
     queryKey: ["violation-rule-types"],
     queryFn: () => violationsApi.listRuleTypes(),
   });
+
+  // Deduplicate by ruleName; when duplicate names exist, append ruleId for disambiguation
+  const ruleTypes = (() => {
+    const byName = new Map<string, { id: string; name: string }[]>();
+    for (const r of ruleTypesRaw) {
+      const list = byName.get(r.name) ?? [];
+      list.push(r);
+      byName.set(r.name, list);
+    }
+    const result: { id: string; name: string }[] = [];
+    for (const [, list] of byName) {
+      if (list.length === 1) {
+        result.push(list[0]);
+      } else {
+        list.forEach((r) => result.push({ id: r.id, name: `${r.name} (${r.id})` }));
+      }
+    }
+    return result.sort((a, b) => a.name.localeCompare(b.name));
+  })();
 
   const updateMutation = useMutation({
     mutationFn: ({ id, action, reason, comment }: { id: string; action: "confirm" | "dismiss" | "defer" | "resolve"; reason?: string; comment?: string }) =>
