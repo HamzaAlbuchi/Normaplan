@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { plansApi, runsApi, violationsApi, REASON_LABELS, type Violation, type RunDetail } from "../api/client";
 import ReviewModal, { STATUS_LABELS } from "../components/ReviewModal";
 import HistoryModal from "../components/HistoryModal";
+import RunAnalysisLoading from "../components/RunAnalysisLoading";
 import { useAuthStore } from "../store/auth";
 import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
 
@@ -12,6 +13,10 @@ const SEVERITY_LABELS: Record<string, string> = {
   warning: "Warnungen",
   info: "Hinweise / Empfehlungen",
 };
+
+function isAiViolation(v: Violation): boolean {
+  return v.ruleId?.startsWith("ai-gemini-") ?? false;
+}
 
 function groupViolations(violations: Violation[]): { error: Violation[]; warning: Violation[]; info: Violation[] } {
   const error: Violation[] = [];
@@ -193,9 +198,11 @@ function ReportWithExport({
   isManager?: boolean;
 }) {
   const printRef = useRef<HTMLDivElement>(null);
-  const grouped = Array.isArray(run.violations)
-    ? groupViolations(run.violations)
-    : { error: [], warning: [], info: [] };
+  const violations = Array.isArray(run.violations) ? run.violations : [];
+  const ruleViolations = violations.filter((v) => !isAiViolation(v));
+  const aiViolations = violations.filter((v) => isAiViolation(v));
+  const groupedRule = groupViolations(ruleViolations);
+  const groupedAi = groupViolations(aiViolations);
 
   const handleExportPdf = () => {
     const el = printRef.current;
@@ -223,7 +230,7 @@ function ReportWithExport({
             <h2 className="font-semibold text-slate-800">Prüfbericht – {plan.name}</h2>
             <p className="text-sm text-slate-500 mt-1">
             Geprüft am {run.checkedAt ? new Date(run.checkedAt).toLocaleString("de-DE") : "—"} ·{" "}
-            {run.violationCount ?? 0} mögliche Verstöße ({run.errorCount ?? 0} Kritisch, {run.warningCount ?? 0} Warnungen, {grouped.info.length} Hinweise)
+            {run.violationCount ?? 0} mögliche Verstöße ({run.errorCount ?? 0} Kritisch, {run.warningCount ?? 0} Warnungen, {groupedRule.info.length + groupedAi.info.length} Hinweise)
             </p>
           </div>
         </div>
@@ -244,40 +251,98 @@ function ReportWithExport({
             Abgedeckte Prüfregeln anzeigen
           </Link>
         </p>
-        {!Array.isArray(run.violations) || run.violations.length === 0 ? (
+        {violations.length === 0 ? (
           <p className="text-slate-600">Keine Verstöße gefunden.</p>
         ) : (
-          <div className="space-y-6">
-            <ViolationSection
-              title={SEVERITY_LABELS.error}
-              count={grouped.error.length}
-              violations={grouped.error}
-              severity="error"
-              onDismiss={onDismiss}
-              onDefer={onDefer}
-              onShowHistory={onShowHistory}
-              isManager={isManager}
-            />
-            <ViolationSection
-              title={SEVERITY_LABELS.warning}
-              count={grouped.warning.length}
-              violations={grouped.warning}
-              severity="warning"
-              onDismiss={onDismiss}
-              onDefer={onDefer}
-              onShowHistory={onShowHistory}
-              isManager={isManager}
-            />
-            <ViolationSection
-              title={SEVERITY_LABELS.info}
-              count={grouped.info.length}
-              violations={grouped.info}
-              severity="info"
-              onDismiss={onDismiss}
-              onDefer={onDefer}
-              onShowHistory={onShowHistory}
-              isManager={isManager}
-            />
+          <div className="space-y-10">
+            {ruleViolations.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 pb-2 border-b-2 border-slate-300">
+                  <h3 className="text-lg font-semibold text-slate-800">Regelbasierte Prüfung</h3>
+                  <Badge variant="default">{ruleViolations.length} Befunde</Badge>
+                </div>
+                <p className="text-xs text-slate-500 -mt-2">
+                  Automatisierte Prüfung gegen definierte Bauvorschriften (MBO, DIN, LBO).
+                </p>
+                <div className="space-y-6">
+                  <ViolationSection
+                    title={SEVERITY_LABELS.error}
+                    count={groupedRule.error.length}
+                    violations={groupedRule.error}
+                    severity="error"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                  <ViolationSection
+                    title={SEVERITY_LABELS.warning}
+                    count={groupedRule.warning.length}
+                    violations={groupedRule.warning}
+                    severity="warning"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                  <ViolationSection
+                    title={SEVERITY_LABELS.info}
+                    count={groupedRule.info.length}
+                    violations={groupedRule.info}
+                    severity="info"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                </div>
+              </div>
+            )}
+
+            {aiViolations.length > 0 && (
+              <div className="space-y-4 rounded-xl border-2 border-indigo-200 bg-indigo-50/30 p-6">
+                <div className="flex items-center gap-2 pb-2 border-b-2 border-indigo-300">
+                  <h3 className="text-lg font-semibold text-indigo-900">KI-Analyse</h3>
+                  <Badge variant="info">AI</Badge>
+                  <Badge variant="default">{aiViolations.length} Befunde</Badge>
+                </div>
+                <p className="text-xs text-indigo-700/80 -mt-2">
+                  Zusätzliche Hinweise durch KI (keine rechtliche Bewertung. Bitte manuell prüfen.)
+                </p>
+                <div className="space-y-6">
+                  <ViolationSection
+                    title={SEVERITY_LABELS.error}
+                    count={groupedAi.error.length}
+                    violations={groupedAi.error}
+                    severity="error"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                  <ViolationSection
+                    title={SEVERITY_LABELS.warning}
+                    count={groupedAi.warning.length}
+                    violations={groupedAi.warning}
+                    severity="warning"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                  <ViolationSection
+                    title={SEVERITY_LABELS.info}
+                    count={groupedAi.info.length}
+                    violations={groupedAi.info}
+                    severity="info"
+                    onDismiss={onDismiss}
+                    onDefer={onDefer}
+                    onShowHistory={onShowHistory}
+                    isManager={isManager}
+                  />
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -302,18 +367,19 @@ export default function PlanReport() {
   const runMutation = useMutation({
     mutationFn: () => runsApi.create(planId!),
     onSuccess: (data) => {
+      queryClient.setQueryData(["run", data.id], data);
       queryClient.invalidateQueries({ queryKey: ["plan", planId] });
       queryClient.invalidateQueries({ queryKey: ["projects", "stats"] });
-      queryClient.setQueryData(["run", data.id], data);
     },
   });
 
-  const runId = plan?.lastRunId;
-  const { data: run, isLoading: runLoading } = useQuery({
+  const runId = plan?.lastRunId ?? (runMutation.data as RunDetail | undefined)?.id;
+  const { data: runData, isLoading: runLoading } = useQuery({
     queryKey: ["run", runId],
     queryFn: () => runsApi.get(runId!),
     enabled: !!runId,
   });
+  const run = runData ?? (runMutation.data as RunDetail | undefined);
 
   const { data: historyData } = useQuery({
     queryKey: ["violation-history", historyViolationId],
@@ -345,7 +411,7 @@ export default function PlanReport() {
     reviewMutation.mutate({ id: reviewViolationId, action: reviewAction, reason, comment });
   };
 
-  const hasRun = !!run;
+  const hasRun = !!run && !runMutation.isPending;
   const canRun = Boolean(plan?.status === "ready" && plan?.elements);
 
   const breadcrumb = plan ? (
@@ -407,7 +473,13 @@ export default function PlanReport() {
             </div>
           )}
 
-          {hasRun && run && (
+          {runMutation.isPending && (
+            <div className="mb-6">
+              <RunAnalysisLoading />
+            </div>
+          )}
+
+          {hasRun && run && !runMutation.isPending && (
             <>
               <ReportWithExport
                 plan={plan}

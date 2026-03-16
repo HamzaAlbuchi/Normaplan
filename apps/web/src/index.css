@@ -8,3 +8,18 @@ body {
   @apply bg-slate-50 text-slate-900 font-sans antialiased;
   font-feature-settings: "cv02", "cv03", "cv04", "cv11";
 }
+
+@keyframes run-progress-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes run-dot-pulse {
+  0%, 100% { opacity: 0.4; transform: scale(0.9); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+@keyframes run-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
