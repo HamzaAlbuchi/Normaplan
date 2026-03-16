@@ -80,20 +80,55 @@ model ProjectAssignment {
   @@index([userId])
 }
 
+// Reusable analysis artifact: keyed by file hash + pipeline compatibility.
+// Independent from Plan; multiple Plans can link to the same artifact.
+// Deleting a Plan must NOT delete the artifact so future uploads can reuse it.
+model AnalysisArtifact {
+  id                    String   @id @default(cuid())
+  fileHash              String   // SHA-256 hex
+  sourceType            String   // PDF | IFC | DWG | IMAGE | JSON | UNKNOWN
+  extractorStrategy     String   // GEMINI_PDF | PDF_FALLBACK | IFC_NATIVE | JSON_MOCK | DWG_AI | IMAGE_VISION | UNKNOWN
+  extractionVersion     String
+  rulesVersion          String
+  promptVersion         String
+  modelVersion          String
+  originalFilename      String?
+  mimeType              String?
+  fileSize              Int?
+  normalizedPlanJson    String   // PlanElements JSON
+  deterministicFindingsJson String? // optional, for future rule-run caching
+  aiFindingsJson        String?  // optional, for future AI violation caching
+  createdAt             DateTime @default(now())
+  lastUsedAt            DateTime @default(now())
+  reuseCount            Int      @default(1)
+  expiresAt             DateTime
+  isPinned              Boolean  @default(false)
+
+  plans Plan[]
+
+  @@unique([fileHash, sourceType, extractorStrategy, extractionVersion, rulesVersion, promptVersion, modelVersion])
+  @@index([fileHash])
+  @@index([expiresAt])
+}
+
 model Plan {
-  id              String   @id @default(cuid())
-  projectId       String
-  project         Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  name            String
-  fileName        String
-  filePath        String?
-  status          String   @default("uploaded")
-  extractionError String?
-  elementsJson    String?
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  projectId            String
+  project              Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  analysisArtifactId   String?  // nullable: links to reusable artifact when reused or after fresh extraction
+  analysisArtifact     AnalysisArtifact? @relation(fields: [analysisArtifactId], references: [id], onDelete: SetNull)
+  name                 String
+  fileName             String
+  filePath             String?
+  status               String   @default("uploaded")
+  extractionError      String?
+  elementsJson         String?  // copy for rule runs; also populated from artifact when linking
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   runs RuleRun[]
+
+  @@index([analysisArtifactId])
 }
 
 model RuleRun {

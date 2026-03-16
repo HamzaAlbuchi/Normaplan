@@ -11,6 +11,9 @@ import { parsePlanFromJson } from "../parser/mockParser.js";
 import { parsePlanFromPdfWithContext } from "../parser/geminiParser.js";
 import { parsePlanFromPdf } from "../parser/pdfParser.js";
 import { parsePlanFromIfc } from "../parser/ifcParser.js";
+import { computeFileHash } from "../services/fileHashService.js";
+import { detectFileType } from "../services/fileTypeDetection.js";
+import { findReusableArtifact, saveNewArtifact } from "../services/analysisReuseService.js";
 
 const createBody = z.object({ projectId: z.string().cuid(), name: z.string().min(1) });
 
@@ -55,11 +58,47 @@ export async function planRoutes(app: FastifyInstance) {
     if (!project) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
 
     const ext = path.extname(filename).toLowerCase();
+    const useGemini = !!config.geminiApiKey?.trim();
+    const fileHash = computeFileHash(buf);
+    const detected = detectFileType(filename, useGemini);
+
+    req.log.info({
+      fileHash,
+      sourceType: detected.sourceType,
+      extractorStrategy: detected.extractorStrategy,
+      fileExtension: detected.fileExtension,
+    }, "Upload: file hash and type detected");
 
     let elementsJson: string | null = null;
     let status = "ready" as "uploaded" | "extracting" | "ready" | "failed";
     let extractionError: string | null = null;
+    let analysisArtifactId: string | null = null;
+    let reusedAnalysis = false;
+    let reuseCount = 1;
+    let artifactExpiresAt: string | null = null;
+    let actualExtractorStrategy = detected.extractorStrategy;
 
+    const supportedForReuse = ext === ".json" || ext === ".pdf" || ext === ".ifc";
+
+    if (supportedForReuse) {
+      const reused = await findReusableArtifact({
+        buffer: buf,
+        filename,
+        useGemini,
+      });
+      if (reused) {
+        req.log.info({ artifactId: reused.artifact.id, reuseCount: reused.artifact.reuseCount }, "Cache hit: reusing analysis artifact");
+        elementsJson = reused.artifact.normalizedPlanJson;
+        analysisArtifactId = reused.artifact.id;
+        reusedAnalysis = true;
+        reuseCount = reused.artifact.reuseCount;
+        artifactExpiresAt = reused.artifact.expiresAt.toISOString();
+        actualExtractorStrategy = reused.detected.extractorStrategy;
+        status = "ready";
+      }
+    }
+
+    if (!reusedAnalysis) {
     if (ext === ".json") {
       try {
         const elements = parsePlanFromJson(buf.toString("utf-8"));
@@ -79,8 +118,9 @@ export async function planRoutes(app: FastifyInstance) {
         try {
           elements = await parsePlanFromPdfWithContext(buf, context, config.geminiApiKey);
         } catch (geminiErr) {
-          if (config.geminiApiKey?.trim()) {
+          if (useGemini) {
             elements = await parsePlanFromPdf(buf);
+            actualExtractorStrategy = "PDF_FALLBACK";
           } else {
             throw geminiErr;
           }
@@ -105,6 +145,20 @@ export async function planRoutes(app: FastifyInstance) {
       extractionError = "Unsupported file type. Use .json, .pdf, or .ifc (BIM).";
     }
 
+      if (elementsJson && supportedForReuse) {
+        const saved = await saveNewArtifact({
+          buffer: buf,
+          filename,
+          useGemini,
+          normalizedPlanJson: elementsJson,
+          actualExtractorStrategy,
+        });
+        analysisArtifactId = saved.artifactId;
+        artifactExpiresAt = saved.expiresAt.toISOString();
+        req.log.info({ artifactId: saved.artifactId }, "New analysis artifact saved");
+      }
+    }
+
     const uploadDir = path.join(config.uploadDir, projectId);
     await fs.mkdir(uploadDir, { recursive: true });
     const fileId = nanoid();
@@ -115,6 +169,7 @@ export async function planRoutes(app: FastifyInstance) {
     const plan = await prisma.plan.create({
       data: {
         projectId,
+        analysisArtifactId,
         name: name || filename,
         fileName: filename,
         filePath,
@@ -132,6 +187,14 @@ export async function planRoutes(app: FastifyInstance) {
       status: plan.status,
       createdAt: plan.createdAt.toISOString(),
       extractionError: plan.extractionError ?? undefined,
+      fileHash,
+      sourceType: detected.sourceType,
+      extractorStrategy: actualExtractorStrategy,
+      reusedAnalysis,
+      reusedFromAnalysisArtifactId: analysisArtifactId ?? undefined,
+      reuseReason: reusedAnalysis ? "Existing analysis reused" : undefined,
+      reuseCount,
+      artifactExpiresAt: artifactExpiresAt ?? undefined,
     });
   });
 

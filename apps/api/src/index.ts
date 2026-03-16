@@ -14,6 +14,7 @@ import { violationRoutes } from "./routes/violations.js";
 import { rulesRoutes } from "./routes/rules.js";
 import { config } from "./config.js";
 import { prisma } from "./db.js";
+import { scheduleAnalysisCleanup } from "./services/scheduleCleanup.js";
 
 async function start() {
   if (!process.env.DATABASE_URL) {
@@ -62,6 +63,7 @@ async function start() {
   const port = Number(process.env.PORT) || 3001;
   await app.listen({ port, host: "0.0.0.0" });
   console.log(`BauPilot API listening on port ${port}`);
+  scheduleAnalysisCleanup();
   console.log(`Gemini PDF analysis: ${config.geminiApiKey ? "enabled" : "disabled (set GEMINI_API_KEY to enable)"}`);
 }
 
