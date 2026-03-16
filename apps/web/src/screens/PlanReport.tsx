@@ -10,6 +10,7 @@ import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
 import { toCanonicalFindings } from "../findings/CanonicalFindingMapper";
 import type { CanonicalFinding } from "../findings/canonicalTypes";
 import { SOURCE_BADGE_LABELS } from "../findings/canonicalTypes";
+import { PlanViewer } from "../plan/PlanViewer";
 
 const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
@@ -191,6 +192,7 @@ function ReportWithExport({
   plan,
   run,
   planId,
+  planElements,
   onDismiss,
   onDefer,
   onShowHistory,
@@ -199,6 +201,7 @@ function ReportWithExport({
   plan: { name: string; fileName: string };
   run: RunDetail;
   planId: string;
+  planElements?: unknown;
   onDismiss?: (ids: string[]) => void;
   onDefer?: (ids: string[]) => void;
   onShowHistory?: (id: string) => void;
@@ -237,6 +240,21 @@ function ReportWithExport({
         </button>
       </div>
       <div className="p-6">
+        {planElements && typeof planElements === "object" && "rooms" in (planElements as object) && (
+          <div className="mb-6">
+            <h3 className="text-sm font-semibold text-slate-700 mb-2">Plan-Ansicht</h3>
+            <p className="text-xs text-slate-500 mb-2">
+              Vereinfachte Darstellung. Rot/Orange = Befund. Klicken zum Zoomen.
+            </p>
+            <PlanViewer
+              elements={planElements as { rooms?: unknown[]; corridors?: unknown[]; doors?: unknown[]; windows?: unknown[] }}
+              violations={violations}
+              width={480}
+              height={280}
+              topDownOnly
+            />
+          </div>
+        )}
         <p className="text-xs text-slate-500 mb-2">
           Dies ist keine rechtliche Bewertung. Bitte prüfen Sie die Hinweise und beziehen Sie die zuständigen Vorschriften ein.
         </p>
@@ -436,6 +454,7 @@ export default function PlanReport() {
                 plan={plan}
                 run={run}
                 planId={planId!}
+                planElements={plan.elements}
                 onDismiss={handleDismiss}
                 onDefer={handleDefer}
                 onShowHistory={(id) => setHistoryViolationId(id)}
