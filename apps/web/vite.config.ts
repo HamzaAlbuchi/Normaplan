@@ -2,13 +2,21 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import { execSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 
 function getAppVersion(): string {
   try {
-    const count = execSync("git rev-list --count HEAD", { encoding: "utf-8" }).trim();
+    const root = path.resolve(__dirname, "../..");
+    const count = execSync("git rev-list --count HEAD", { encoding: "utf-8", cwd: root }).trim();
     return `0.${count}`;
   } catch {
-    return "0.0.0";
+    try {
+      const pkgPath = path.resolve(__dirname, "../package.json");
+      const pkg = JSON.parse(readFileSync(pkgPath, "utf-8")) as { version?: string };
+      return pkg?.version ?? "0.0.0";
+    } catch {
+      return "0.0.0";
+    }
   }
 }
 

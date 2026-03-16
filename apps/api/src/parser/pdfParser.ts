@@ -53,7 +53,10 @@ function findDimensionNumbers(text: string): number[] {
 export async function parsePlanFromPdf(buffer: Buffer): Promise<PlanElements> {
   const text = await extractPdfText(buffer);
   if (!text || text.trim().length < 10) {
-    throw new Error("PDF contains too little extractable text. Try a PDF with visible dimensions or upload JSON.");
+    throw new Error(
+      "PDF enthält zu wenig extrahierbaren Text (typisch bei Bild-Grundrissen). " +
+      "Setzen Sie GEMINI_API_KEY für visuelle Analyse, oder laden Sie einen JSON-Plan hoch."
+    );
   }
 
   const dimensions = findDimensionNumbers(text);
