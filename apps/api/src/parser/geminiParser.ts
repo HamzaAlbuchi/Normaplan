@@ -103,7 +103,7 @@ export async function parsePlanFromPdfWithGemini(
   ];
 
   const response = await ai.models.generateContent({
-    model: "gemini-2.0-flash",
+    model: "gemini-2.5-flash",
     contents,
   });
 
@@ -224,7 +224,7 @@ export async function fetchAiViolationsFromGemini(
     const prompt = buildViolationsPrompt(context, elementsJson);
 
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       contents: [{ text: prompt }],
     });
 
