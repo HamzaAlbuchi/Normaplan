@@ -406,10 +406,13 @@ export default function PlanReport() {
               canRun && (
                 <div className="flex flex-col items-end gap-2">
                   <details className="group">
-                    <summary className="cursor-pointer text-sm text-slate-600 hover:text-slate-800 list-none [&::-webkit-details-marker]:hidden">
+                    <summary className="cursor-pointer text-sm text-slate-600 hover:text-slate-800 list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
+                      <span className="inline-block transition-transform group-open:rotate-90">▸</span>
                       {selectedCategories.length > 0 ? (
-                        <span className="text-slate-700 font-medium">
-                          {selectedCategories.length} Bereiche: {selectedCategories.map((c) => CATEGORY_LABELS[c] ?? c).join(", ")}
+                        <span className="text-slate-700">
+                          {selectedCategories.length === CATEGORY_ORDER.length
+                            ? "Alle Prüfbereiche"
+                            : `${selectedCategories.length} von ${CATEGORY_ORDER.length} Prüfbereiche`}
                         </span>
                       ) : (
                         "Prüfbereiche einschränken"
