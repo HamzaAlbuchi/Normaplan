@@ -7,10 +7,10 @@ import HistoryModal from "../components/HistoryModal";
 import RunAnalysisLoading from "../components/RunAnalysisLoading";
 import { useAuthStore } from "../store/auth";
 import { Badge, Button, Card, CardContent, PageHeader } from "../components/ui";
+import { CATEGORY_LABELS, CATEGORY_ORDER } from "../config/ruleScope";
 import { toCanonicalFindings } from "../findings/CanonicalFindingMapper";
 import type { CanonicalFinding } from "../findings/canonicalTypes";
 import { SOURCE_BADGE_LABELS } from "../findings/canonicalTypes";
-import { PlanViewer } from "../plan/PlanViewer";
 
 const SEVERITY_LABELS: Record<string, string> = {
   error: "Kritisch",
@@ -192,7 +192,6 @@ function ReportWithExport({
   plan,
   run,
   planId,
-  planElements,
   onDismiss,
   onDefer,
   onShowHistory,
@@ -201,7 +200,6 @@ function ReportWithExport({
   plan: { name: string; fileName: string };
   run: RunDetail;
   planId: string;
-  planElements?: unknown;
   onDismiss?: (ids: string[]) => void;
   onDefer?: (ids: string[]) => void;
   onShowHistory?: (id: string) => void;
@@ -240,21 +238,6 @@ function ReportWithExport({
         </button>
       </div>
       <div className="p-6">
-        {planElements && typeof planElements === "object" && "rooms" in (planElements as object) && (
-          <div className="mb-6">
-            <h3 className="text-sm font-semibold text-slate-700 mb-2">Plan-Ansicht</h3>
-            <p className="text-xs text-slate-500 mb-2">
-              Vereinfachte Darstellung. Rot/Orange = Befund. Klicken zum Zoomen.
-            </p>
-            <PlanViewer
-              elements={planElements as { rooms?: unknown[]; corridors?: unknown[]; doors?: unknown[]; windows?: unknown[] }}
-              violations={violations}
-              width={480}
-              height={280}
-              topDownOnly
-            />
-          </div>
-        )}
         <p className="text-xs text-slate-500 mb-2">
           Dies ist keine rechtliche Bewertung. Bitte prüfen Sie die Hinweise und beziehen Sie die zuständigen Vorschriften ein.
         </p>
@@ -323,6 +306,7 @@ export default function PlanReport() {
   const [reviewViolationIds, setReviewViolationIds] = useState<string[]>([]);
   const [reviewAction, setReviewAction] = useState<"dismiss" | "defer">("dismiss");
   const [historyViolationId, setHistoryViolationId] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
   const { data: plan, isLoading: planLoading } = useQuery({
     queryKey: ["plan", planId],
@@ -420,12 +404,51 @@ export default function PlanReport() {
             breadcrumb={breadcrumb}
             action={
               canRun && (
-                <Button
-                  onClick={() => runMutation.mutate()}
-                  disabled={runMutation.isPending}
-                >
-                  {runMutation.isPending ? "Prüfe…" : "Prüflauf starten"}
-                </Button>
+                <div className="flex flex-col items-end gap-2">
+                  <details className="group">
+                    <summary className="cursor-pointer text-sm text-slate-600 hover:text-slate-800 list-none [&::-webkit-details-marker]:hidden">
+                      {selectedCategories.length > 0 ? (
+                        <span className="text-slate-700 font-medium">
+                          {selectedCategories.length} Bereiche: {selectedCategories.map((c) => CATEGORY_LABELS[c] ?? c).join(", ")}
+                        </span>
+                      ) : (
+                        "Prüfbereiche einschränken"
+                      )}
+                    </summary>
+                    <div className="mt-2 p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2 min-w-[200px]">
+                      {CATEGORY_ORDER.map((cat) => {
+                        const label = CATEGORY_LABELS[cat] ?? cat;
+                        const checked = selectedCategories.includes(cat);
+                        return (
+                          <label
+                            key={cat}
+                            className="flex items-center gap-2 text-sm cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setSelectedCategories((s) => [...s, cat]);
+                                } else {
+                                  setSelectedCategories((s) => s.filter((c) => c !== cat));
+                                }
+                              }}
+                              className="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+                            />
+                            {label}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </details>
+                  <Button
+                    onClick={() => runMutation.mutate()}
+                    disabled={runMutation.isPending}
+                  >
+                    {runMutation.isPending ? "Prüfe…" : "Prüflauf starten"}
+                  </Button>
+                </div>
               )
             }
           />
@@ -454,7 +477,6 @@ export default function PlanReport() {
                 plan={plan}
                 run={run}
                 planId={planId!}
-                planElements={plan.elements}
                 onDismiss={handleDismiss}
                 onDefer={handleDefer}
                 onShowHistory={(id) => setHistoryViolationId(id)}

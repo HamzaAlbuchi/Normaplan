@@ -355,8 +355,11 @@ export interface RunDetail {
 }
 
 export const runsApi = {
-  create: (planId: string) =>
-    api<RunDetail>("/runs", { method: "POST", body: { planId } }),
+  create: (planId: string, options?: { categories?: string[] }) =>
+    api<RunDetail>("/runs", {
+      method: "POST",
+      body: { planId, categories: options?.categories },
+    }),
   get: (runId: string) => api<RunDetail>(`/runs/${runId}`),
 };
 

@@ -21,7 +21,7 @@ export async function runRoutes(app: FastifyInstance) {
 
   app.post("/", async (req, reply) => {
     const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
-    const body = req.body as { planId: string };
+    const body = req.body as { planId: string; categories?: string[] };
     if (!body?.planId) return reply.status(400).send({ code: "MISSING_PLAN_ID", message: "planId required" });
 
     const plan = await prisma.plan.findFirst({
@@ -41,6 +41,7 @@ export async function runRoutes(app: FastifyInstance) {
       runId,
       planId: plan.id,
       state: plan.project.state,
+      categories: body.categories,
     });
 
     let violations: RuleViolation[] = [...ruleViolations];

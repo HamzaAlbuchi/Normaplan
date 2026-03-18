@@ -9,19 +9,21 @@ export type RuleStatus = "covered" | "in_preparation" | "limited" | "information
 export const CATEGORY_LABELS: Record<string, string> = {
   accessibility: "Barrierefreiheit",
   escape: "Flucht- und Rettungswege",
-  geometry: "Geometrie / Belichtung",
   fire: "Brandschutz",
-  safety: "Sicherheit",
+  geometry: "Geometrie / Belichtung",
   planning: "Planung / Bauordnung",
+  safety: "Sicherheit",
+  stairs: "Treppen",
 };
 
-/** Display order for categories on the Prüfumfang page */
+/** Display order for categories on the Prüfumfang page and scan filter */
 export const CATEGORY_ORDER = [
   "accessibility",
   "escape",
-  "geometry",
   "fire",
+  "geometry",
   "safety",
+  "stairs",
   "planning",
 ];
 
