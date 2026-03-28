@@ -195,7 +195,10 @@ function ReportWithExport({
 
   const handleExportPdf = () => {
     import("../report/exportPdf").then(({ exportReportAsPdf }) => {
-      exportReportAsPdf({ plan, run, planId });
+      exportReportAsPdf({ plan, run, planId }).catch((e) => {
+        console.error(e);
+        window.alert(e instanceof Error ? e.message : "PDF-Export fehlgeschlagen.");
+      });
     });
   };
 

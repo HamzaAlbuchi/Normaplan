@@ -1,7 +1,9 @@
 # BauPilot API – minimal deploy: only apps/api, no monorepo deps. OpenSSL for Prisma.
 FROM node:20-slim
 
-RUN apt-get update -y && apt-get install -y openssl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update -y \
+  && apt-get install -y openssl python3 python3-pip \
+  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -9,6 +11,8 @@ COPY apps/api/package.json ./
 RUN npm install
 
 COPY apps/api ./
+
+RUN python3 -m pip install --break-system-packages --no-cache-dir -r pdf_report/requirements.txt
 
 RUN npx prisma generate --schema=prisma/schema.prisma && npm run build
 

@@ -50,6 +50,31 @@ export async function api<T>(path: string, options: ApiOptions = {}): Promise<T>
   }
 }
 
+/** Authenticated fetch returning a Blob (e.g. PDF). */
+export async function apiBlob(path: string): Promise<Blob> {
+  const headers = new Headers();
+  const token = getAuthToken();
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+
+  const url = `${API_BASE}${path}`.replace(/([^:]\/)\/+/g, "$1");
+  const res = await fetch(url, { headers });
+
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const data = await res.json();
+      if (data && typeof data === "object" && ("message" in data || "code" in data)) {
+        message = String((data as { message?: string; code?: string }).message ?? (data as { code?: string }).code ?? message);
+      }
+    } catch {
+      // ignore
+    }
+    throw new Error(message || String(res.status));
+  }
+
+  return res.blob();
+}
+
 // Auth
 export interface OrgMembership {
   id: string;
@@ -376,6 +401,8 @@ export const runsApi = {
       body: { planId, categories: options?.categories },
     }),
   get: (runId: string) => api<RunDetail>(`/runs/${runId}`),
+  /** Server-side ReportLab PDF (requires Python + reportlab on API host). */
+  downloadPdf: (runId: string) => apiBlob(`/runs/${runId}/pdf`),
 };
 
 // Admin

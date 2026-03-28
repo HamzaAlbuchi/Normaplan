@@ -7,6 +7,8 @@ import { config } from "../config.js";
 import { runRules } from "../rules/index.js";
 import { fetchAiViolationsFromGemini } from "../parser/geminiParser.js";
 import type { PlanElements, RuleViolation } from "../types.js";
+import { buildPlanReportPdfPayload } from "../report/pdfPayload.js";
+import { renderPlanReportPdfFromPayload } from "../report/pdfReportService.js";
 
 export async function runRoutes(app: FastifyInstance) {
   app.addHook("onRequest", async (req, reply) => {
@@ -116,6 +118,56 @@ export async function runRoutes(app: FastifyInstance) {
         decidedAt: v.decidedAt?.toISOString(),
       })),
     });
+  });
+
+  app.get("/:runId/pdf", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { runId } = req.params as { runId: string };
+    const run = await prisma.ruleRun.findFirst({
+      where: { id: runId },
+      include: { plan: true, violations: true },
+    });
+    if (!run || !(await canWorkOnProject(user.id, run.plan.projectId)))
+      return reply.status(404).send({ code: "NOT_FOUND", message: "Run not found" });
+
+    const payload = buildPlanReportPdfPayload({
+      planName: run.plan.name,
+      planFileName: run.plan.fileName,
+      runId: run.id,
+      checkedAt: run.checkedAt.toISOString(),
+      violationCount: run.violationCount,
+      warningCount: run.warningCount,
+      errorCount: run.errorCount,
+      violations: run.violations.map((v) => ({
+        id: v.id,
+        ruleId: v.ruleId,
+        ruleName: v.ruleName,
+        severity: v.severity,
+        message: v.message,
+        suggestion: v.suggestion,
+        elementIds: v.elementIds,
+        actualValue: v.actualValue,
+        requiredValue: v.requiredValue,
+        regulationRef: v.regulationRef,
+      })),
+    });
+
+    try {
+      const pdf = await renderPlanReportPdfFromPayload(payload);
+      const safe = run.plan.name.replace(/[^\p{L}\p{N}\-_ .]+/gu, "_").trim().slice(0, 120) || "Plan";
+      const utfName = `Prüfbericht-${safe}.pdf`;
+      const disp = `attachment; filename="${utfName.replace(/"/g, "")}"; filename*=UTF-8''${encodeURIComponent(utfName)}`;
+      return reply.header("Content-Type", "application/pdf").header("Content-Disposition", disp).send(pdf);
+    } catch (e) {
+      req.log.error(e);
+      return reply.status(503).send({
+        code: "PDF_ENGINE_UNAVAILABLE",
+        message:
+          e instanceof Error
+            ? e.message
+            : "PDF export not available. Install Python 3 and ReportLab on the server (see pdf_report/requirements.txt).",
+      });
+    }
   });
 
   app.get("/:runId", async (req, reply) => {

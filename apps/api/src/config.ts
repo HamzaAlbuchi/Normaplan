@@ -28,4 +28,6 @@ export const config = {
   /** ConvertAPI secret for DWG/DXF → PDF conversion. When set, DWG/DXF are converted to PDF before Gemini. Free tier: 250 conversions at convertapi.com */
   convertApiSecret: process.env.CONVERTAPI_SECRET || "",
   analysisCache: getAnalysisCacheConfig(),
+  /** Python executable for ReportLab PDF export (`pip install -r pdf_report/requirements.txt`). */
+  pdfReportPython: process.env.PDF_REPORT_PYTHON || (process.platform === "win32" ? "python" : "python3"),
 };
