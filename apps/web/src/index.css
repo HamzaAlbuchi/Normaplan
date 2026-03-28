@@ -61,6 +61,17 @@
   animation: fadeUp 0.35s ease forwards;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-proj-header,
+  .animate-violation-hero,
+  .animate-two-col {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .animate-proj-header {
   animation: fadeUp 0.25s ease forwards;
 }

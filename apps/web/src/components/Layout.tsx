@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useLocation, Link, useMatches } from "react-router-dom";
+import { Outlet, NavLink, useLocation, Link } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -35,13 +35,9 @@ export default function Layout() {
   const { token, loadFromStorage, setUser } = useAuthStore();
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
-  const matches = useMatches();
   const [projectTopbar, setProjectTopbar] = useState<React.ReactNode>(null);
 
-  const projectIdParam = matches.reduce<string | undefined>((id, m) => {
-    const p = m.params as { projectId?: string };
-    return p?.projectId ?? id;
-  }, undefined);
+  const projectIdParam = location.pathname.match(/^\/project\/([^/]+)/)?.[1];
 
   const { data: crumbProject } = useQuery({
     queryKey: ["project", projectIdParam],
@@ -150,7 +146,7 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="scrollbar-app flex-1 overflow-y-auto px-7 py-6 animate-fade-up">
+        <main className="scrollbar-app flex-1 overflow-y-auto px-7 py-6">
           <Outlet context={{ setProjectTopbar } satisfies MainOutletContext} />
         </main>
       </div>
