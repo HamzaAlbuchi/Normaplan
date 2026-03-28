@@ -1,8 +1,13 @@
-import { Outlet, NavLink, useLocation, Link } from "react-router-dom";
+import { Outlet, NavLink, useLocation, Link, useMatches } from "react-router-dom";
 import { useAuthStore } from "../store/auth";
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import UserMenu from "./UserMenu";
-import { authApi } from "../api/client";
+import { authApi, projectsApi } from "../api/client";
+
+export type MainOutletContext = {
+  setProjectTopbar: (node: React.ReactNode) => void;
+};
 
 function breadcrumbFromPath(pathname: string): { crumbs: { label: string; to?: string }[]; current: string } {
   if (pathname === "/") return { crumbs: [], current: "Dashboard" };
@@ -14,7 +19,7 @@ function breadcrumbFromPath(pathname: string): { crumbs: { label: string; to?: s
   if (pathname.startsWith("/org/"))
     return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Organisation" };
   if (pathname.startsWith("/project/"))
-    return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Projekt" };
+    return { crumbs: [], current: "" };
   if (pathname.startsWith("/plan/"))
     return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Planbericht" };
   return { crumbs: [{ label: "Dashboard", to: "/" }], current: "BauPilot" };
@@ -30,7 +35,32 @@ export default function Layout() {
   const { token, loadFromStorage, setUser } = useAuthStore();
   const user = useAuthStore((s) => s.user);
   const location = useLocation();
-  const { crumbs, current } = breadcrumbFromPath(location.pathname);
+  const matches = useMatches();
+  const [projectTopbar, setProjectTopbar] = useState<React.ReactNode>(null);
+
+  const projectIdParam = matches.reduce<string | undefined>((id, m) => {
+    const p = m.params as { projectId?: string };
+    return p?.projectId ?? id;
+  }, undefined);
+
+  const { data: crumbProject } = useQuery({
+    queryKey: ["project", projectIdParam],
+    queryFn: () => projectsApi.get(projectIdParam!),
+    enabled: !!projectIdParam && location.pathname.startsWith("/project/"),
+  });
+
+  const { crumbs, current } = useMemo(() => {
+    if (location.pathname.startsWith("/project/") && projectIdParam) {
+      return {
+        crumbs: [
+          { label: "Dashboard", to: "/" },
+          { label: "Projects", to: "/" },
+        ],
+        current: crumbProject?.name ?? "Projekt",
+      };
+    }
+    return breadcrumbFromPath(location.pathname);
+  }, [location.pathname, projectIdParam, crumbProject?.name]);
 
   useEffect(() => {
     loadFromStorage();
@@ -41,6 +71,10 @@ export default function Layout() {
       authApi.getMe().then((u) => setUser(u)).catch(() => {});
     }
   }, [token, setUser]);
+
+  useEffect(() => {
+    if (!location.pathname.startsWith("/project/")) setProjectTopbar(null);
+  }, [location.pathname]);
 
   if (!token) return null;
 
@@ -105,17 +139,19 @@ export default function Layout() {
             <span className="truncate font-semibold text-ink">{current}</span>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              to="/profile"
-              className="rounded-sm border border-border2 px-3 py-1.5 font-sans text-[11px] font-semibold tracking-wide text-ink hover:border-ink2"
-            >
-              Profil
-            </Link>
+            {projectTopbar ?? (
+              <Link
+                to="/profile"
+                className="rounded-sm border border-border2 px-3 py-1.5 font-sans text-[11px] font-semibold tracking-wide text-ink hover:border-ink2"
+              >
+                Profil
+              </Link>
+            )}
           </div>
         </header>
 
         <main className="scrollbar-app flex-1 overflow-y-auto px-7 py-6 animate-fade-up">
-          <Outlet />
+          <Outlet context={{ setProjectTopbar } satisfies MainOutletContext} />
         </main>
       </div>
     </div>

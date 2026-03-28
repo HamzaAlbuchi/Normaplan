@@ -53,17 +53,20 @@ export default function Dashboard() {
   const [projectStatusFilter, setProjectStatusFilter] = useState<string>("ongoing");
   const queryClient = useQueryClient();
   const user = useAuthStore((s) => s.user);
+  const token = useAuthStore((s) => s.token);
   const orgs = user?.organizations ?? [];
   const canCreateProject = orgs.some((o) => ["owner", "manager"].includes(o.role));
   const defaultOrgId = orgs[0]?.id;
 
   const { data: projects = [], isLoading } = useQuery({
-    queryKey: ["projects"],
+    queryKey: ["projects", user?.id],
     queryFn: () => projectsApi.list(),
+    enabled: Boolean(token),
   });
   const { data: stats } = useQuery({
-    queryKey: ["projects", "stats"],
+    queryKey: ["projects", "stats", user?.id],
     queryFn: () => projectsApi.getStats(),
+    enabled: Boolean(token),
   });
 
   const createProjectMutation = useMutation({

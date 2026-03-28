@@ -191,7 +191,7 @@ export async function projectRoutes(app: FastifyInstance) {
     const access = await canAccessProject(user.id, projectId);
     if (!access.ok) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
 
-    const [total, openCount, criticalCount] = await Promise.all([
+    const [total, openCount, criticalCount, resolvedCount] = await Promise.all([
       prisma.ruleViolation.count({
         where: { run: { plan: { projectId } } },
       }),
@@ -199,10 +199,37 @@ export async function projectRoutes(app: FastifyInstance) {
         where: { run: { plan: { projectId } }, status: "open" },
       }),
       prisma.ruleViolation.count({
-        where: { run: { plan: { projectId } }, severity: "error" },
+        where: { run: { plan: { projectId } }, status: "open", severity: "error" },
+      }),
+      prisma.ruleViolation.count({
+        where: { run: { plan: { projectId } }, status: "resolved" },
       }),
     ]);
-    return { total, openCount, criticalCount };
+    return { total, openCount, criticalCount, resolvedCount };
+  });
+
+  app.get("/:projectId/runs", async (req, reply) => {
+    const { user } = req as unknown as { user: Awaited<ReturnType<typeof requireAuth>> };
+    const { projectId } = req.params as { projectId: string };
+    const access = await canAccessProject(user.id, projectId);
+    if (!access.ok) return reply.status(404).send({ code: "NOT_FOUND", message: "Project not found" });
+
+    const runs = await prisma.ruleRun.findMany({
+      where: { plan: { projectId } },
+      orderBy: { checkedAt: "desc" },
+      take: 30,
+      include: { plan: { select: { id: true, name: true, fileName: true } } },
+    });
+    return runs.map((r) => ({
+      id: r.id,
+      planId: r.planId,
+      planName: r.plan.name,
+      fileName: r.plan.fileName,
+      checkedAt: r.checkedAt.toISOString(),
+      violationCount: r.violationCount,
+      warningCount: r.warningCount,
+      errorCount: r.errorCount,
+    }));
   });
 
   app.get("/:projectId", async (req, reply) => {

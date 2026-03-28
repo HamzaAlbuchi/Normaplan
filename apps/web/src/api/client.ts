@@ -192,7 +192,22 @@ export const projectsApi = {
   update: (id: string, data: { name?: string; zipCode?: string | null; projectType?: ProjectType | null; status?: ProjectStatus }) =>
     api<ProjectSummary>(`/projects/${id}`, { method: "PATCH", body: data }),
   getViolationStats: (projectId: string) =>
-    api<{ total: number; openCount: number; criticalCount: number }>(`/projects/${projectId}/violation-stats`),
+    api<{ total: number; openCount: number; criticalCount: number; resolvedCount: number }>(
+      `/projects/${projectId}/violation-stats`
+    ),
+  listRuns: (projectId: string) =>
+    api<
+      {
+        id: string;
+        planId: string;
+        planName: string;
+        fileName: string;
+        checkedAt: string;
+        violationCount: number;
+        warningCount: number;
+        errorCount: number;
+      }[]
+    >(`/projects/${projectId}/runs`),
   listAssignments: (projectId: string) =>
     api<{ userId: string; email: string; name?: string }[]>(`/projects/${projectId}/assignments`),
   addAssignment: (projectId: string, userId: string) =>

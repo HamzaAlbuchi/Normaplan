@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { queryClient } from "../queryClient";
 
 const TOKEN_KEY = "baupilot_token";
 const USER_KEY = "baupilot_user";
@@ -51,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   logout: () => {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    queryClient.clear();
     set({ token: null, user: null });
   },
   loadFromStorage: () => set(getStored()),

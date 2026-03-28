@@ -61,6 +61,18 @@
   animation: fadeUp 0.35s ease forwards;
 }
 
+.animate-proj-header {
+  animation: fadeUp 0.25s ease forwards;
+}
+
+.animate-violation-hero {
+  animation: fadeUp 0.3s ease forwards;
+}
+
+.animate-two-col {
+  animation: fadeUp 0.35s ease forwards;
+}
+
 .animate-pulse-amber {
   animation: pulse 2s ease infinite;
 }

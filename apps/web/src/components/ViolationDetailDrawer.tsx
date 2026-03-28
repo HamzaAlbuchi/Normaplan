@@ -45,9 +45,9 @@ export default function ViolationDetailDrawer({
   const severityLabel = SEVERITY_LABELS[violation.severity] ?? violation.severity;
 
   return (
-    <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg border-l border-slate-200 bg-white shadow-xl">
-      <div className="flex h-full flex-col">
-        <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+    <div className="fixed inset-y-0 right-0 z-50 flex w-full max-w-lg flex-col border-l border-slate-200 bg-white shadow-xl">
+      <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex shrink-0 items-center justify-between border-b border-slate-200 px-6 py-4">
           <h3 className="text-lg font-semibold text-slate-900">Verstoßdetails</h3>
           <button
             type="button"
@@ -60,7 +60,7 @@ export default function ViolationDetailDrawer({
             </svg>
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-6">
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2">
               {violation.ruleId?.startsWith("ai-gemini-") && (
@@ -115,7 +115,7 @@ export default function ViolationDetailDrawer({
             </p>
           </div>
         </div>
-        <div className="border-t border-slate-200 p-4 space-y-2">
+        <div className="shrink-0 space-y-2 border-t border-slate-200 bg-white p-4">
           {canReview && isOpen && (
             <div className="flex flex-wrap gap-2">
               <Button variant="secondary" size="sm" onClick={onConfirm}>
