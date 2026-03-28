@@ -11,7 +11,7 @@ export type MainOutletContext = {
 
 function breadcrumbFromPath(pathname: string): { crumbs: { label: string; to?: string }[]; current: string } {
   if (pathname === "/") return { crumbs: [], current: "Dashboard" };
-  if (pathname === "/violations") return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Verstöße" };
+  if (pathname === "/violations") return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Violations" };
   if (pathname === "/pruefumfang")
     return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Prüfumfang" };
   if (pathname === "/profile") return { crumbs: [{ label: "Dashboard", to: "/" }], current: "Profil" };

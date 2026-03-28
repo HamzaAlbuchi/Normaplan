@@ -98,3 +98,56 @@
   background: var(--border2);
   border-radius: 10px;
 }
+
+@keyframes fadeUpVrow {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.violation-row-animate {
+  animation: fadeUpVrow 0.3s ease both;
+}
+
+@keyframes fadeUpPanel {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.violation-panel-animate {
+  animation: fadeUpPanel 0.3s ease both;
+}
+
+@keyframes ruleScopeFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.rule-scope-hero {
+  animation: ruleScopeFadeUp 0.25s ease both;
+}
+
+.rule-scope-cat {
+  animation: ruleScopeFadeUp 0.3s ease both;
+}
+
+.rule-scope-rpanel {
+  animation: ruleScopeFadeUp 0.3s ease both;
+}

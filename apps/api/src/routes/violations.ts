@@ -14,7 +14,7 @@ const listQuery = z.object({
   reviewedBy: z.string().cuid().optional(),
   sort: z.enum(["detectedAt", "updatedAt"]).optional().default("detectedAt"),
   order: z.enum(["asc", "desc"]).optional().default("desc"),
-  limit: z.coerce.number().min(1).max(100).optional().default(50),
+  limit: z.coerce.number().min(1).max(250).optional().default(50),
   offset: z.coerce.number().min(0).optional().default(0),
 });
 
