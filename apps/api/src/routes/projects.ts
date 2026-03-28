@@ -127,6 +127,54 @@ export async function projectRoutes(app: FastifyInstance) {
         assignments: { include: { user: { select: { id: true, email: true, name: true } } } },
       },
     });
+
+    const openCriticalCount = new Map<string, number>();
+    const openWarningCount = new Map<string, number>();
+    const runCountByProject = new Map<string, number>();
+    const lastRunAtByProject = new Map<string, Date>();
+    for (const id of projectIds) {
+      openCriticalCount.set(id, 0);
+      openWarningCount.set(id, 0);
+      runCountByProject.set(id, 0);
+    }
+
+    const runs = await prisma.ruleRun.findMany({
+      where: { plan: { projectId: { in: projectIds } } },
+      select: {
+        id: true,
+        checkedAt: true,
+        plan: { select: { projectId: true } },
+      },
+    });
+
+    const allRunIds: string[] = [];
+    for (const r of runs) {
+      const pid = r.plan.projectId;
+      runCountByProject.set(pid, (runCountByProject.get(pid) ?? 0) + 1);
+      allRunIds.push(r.id);
+      const prev = lastRunAtByProject.get(pid);
+      if (!prev || r.checkedAt > prev) lastRunAtByProject.set(pid, r.checkedAt);
+    }
+
+    if (allRunIds.length > 0) {
+      const viols = await prisma.ruleViolation.findMany({
+        where: {
+          runId: { in: allRunIds },
+          status: "open",
+          severity: { in: ["error", "warning"] },
+        },
+        select: {
+          severity: true,
+          run: { select: { plan: { select: { projectId: true } } } },
+        },
+      });
+      for (const v of viols) {
+        const pid = v.run.plan.projectId;
+        if (v.severity === "error") openCriticalCount.set(pid, (openCriticalCount.get(pid) ?? 0) + 1);
+        else openWarningCount.set(pid, (openWarningCount.get(pid) ?? 0) + 1);
+      }
+    }
+
     return projects.map((p) => ({
       id: p.id,
       name: p.name,
@@ -137,6 +185,10 @@ export async function projectRoutes(app: FastifyInstance) {
       status: p.status,
       createdAt: p.createdAt.toISOString(),
       planCount: p._count.plans,
+      runCount: runCountByProject.get(p.id) ?? 0,
+      openCriticalCount: openCriticalCount.get(p.id) ?? 0,
+      openWarningCount: openWarningCount.get(p.id) ?? 0,
+      lastRunAt: lastRunAtByProject.get(p.id)?.toISOString() ?? null,
       architects: p.assignments.map((a) => ({ id: a.user.id, email: a.user.email, name: a.user.name })),
     }));
   });
@@ -182,6 +234,10 @@ export async function projectRoutes(app: FastifyInstance) {
       status: project.status,
       createdAt: project.createdAt.toISOString(),
       planCount: 0,
+      runCount: 0,
+      openCriticalCount: 0,
+      openWarningCount: 0,
+      lastRunAt: null,
     });
   });
 

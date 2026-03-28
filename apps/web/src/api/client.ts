@@ -177,6 +177,14 @@ export interface ProjectSummary {
   status?: ProjectStatus;
   createdAt: string;
   planCount: number;
+  /** Open violations with severity error (kritisch). */
+  openCriticalCount?: number;
+  /** Open violations with severity warning. */
+  openWarningCount?: number;
+  /** Total rule runs across all plans. */
+  runCount?: number;
+  /** Latest run timestamp in this project. */
+  lastRunAt?: string | null;
   architects?: { id: string; email: string; name?: string }[];
 }
 
