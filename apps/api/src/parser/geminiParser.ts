@@ -105,6 +105,7 @@ export async function parsePlanFromPdfWithGemini(
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
     contents,
+    config: { temperature: 0, seed: 42 },
   });
 
   const text = (response as { text?: string }).text ?? "";
@@ -135,7 +136,7 @@ export async function parsePlanFromPdfWithContext(
   return parsePlanFromPdf(buffer);
 }
 
-const VIOLATIONS_PROMPT = `Analysiere die Plan-Elemente und prüfe sie gegen deutsche Bauvorschriften (MBO, DIN, LBO, Landesbauordnungen).
+const VIOLATIONS_PROMPT = `Analysiere JEDES einzelne Plan-Element systematisch und prüfe es gegen deutsche Bauvorschriften (MBO, DIN, LBO, Landesbauordnungen). Gehe Raum für Raum, Tür für Tür, Fenster für Fenster durch. Überspringe kein Element.
 Antworte NUR mit einem JSON-Objekt in diesem Format (ohne Markdown, ohne Erklärungen):
 {
   "violations": [
@@ -226,6 +227,7 @@ export async function fetchAiViolationsFromGemini(
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [{ text: prompt }],
+      config: { temperature: 0, seed: 42 },
     });
 
     const text = (response as { text?: string }).text ?? "";

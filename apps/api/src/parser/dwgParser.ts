@@ -88,6 +88,7 @@ export async function parsePlanFromDwgWithGemini(
         { fileData: { fileUri, mimeType: uploaded.mimeType ?? mimeType } },
         { text: buildDwgPrompt(context) },
       ],
+      config: { temperature: 0, seed: 42 },
     });
 
     const text = (response as { text?: string }).text ?? "";
