@@ -639,19 +639,15 @@ export default function Violations() {
         className="violation-panel-animate flex w-full shrink-0 flex-col gap-5 overflow-y-auto lg:w-[380px]"
         style={{ background: "var(--bg)", padding: "24px 20px", gap: 20 }}
       >
-        <section className="rounded-md p-5 text-[var(--run-meta)]" style={{ background: "var(--side)", padding: 20 }}>
+        <section className="rounded-md p-5" style={{ background: "var(--side)", padding: 20 }}>
+          <p className="mb-2.5 font-mono text-[8px] uppercase tracking-[1.8px] text-on-dark-muted">Summary</p>
           <p
-            className="mb-2.5 font-mono text-[8px] uppercase tracking-[1.8px]"
-            style={{ color: "#3A3A2A" }}
+            className="font-serif text-[48px] font-semibold leading-none tracking-[-2px] text-on-dark-primary"
+            style={{ fontFamily: "Fraunces, serif" }}
           >
-            Summary
-          </p>
-          <p className="font-serif text-[48px] font-semibold leading-none tracking-[-2px] text-[#F4F1EB]" style={{ fontFamily: "Fraunces, serif" }}>
             {rightSummaryTotal}
           </p>
-          <p className="mb-3.5 mt-1 font-mono text-[9px]" style={{ color: "#3A3A2A" }}>
-            {subtitlePlan}
-          </p>
+          <p className="mb-3.5 mt-1 font-mono text-[9px] text-on-dark-secondary">{subtitlePlan}</p>
           <div className="space-y-2.5">
             {[
               { label: "Critical", n: breakdownCrit, c: "#F0A0A0" },
@@ -665,7 +661,7 @@ export default function Violations() {
                     {row.n}
                   </span>
                 </div>
-                <div className="h-0.5 w-full rounded-sm" style={{ background: "rgba(255,255,255,0.06)" }}>
+                <div className="h-0.5 w-full rounded-sm bg-on-dark-surface">
                   <div className="h-full rounded-sm" style={{ width: `${Math.min(100, (row.n / barDen) * 100)}%`, background: row.c }} />
                 </div>
               </div>

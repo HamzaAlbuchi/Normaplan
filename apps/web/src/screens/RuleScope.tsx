@@ -178,6 +178,14 @@ function severityBadgeLabel(sev: string | undefined): string {
   return SEVERITY_LABELS[sev] ?? sev;
 }
 
+/** Einschränkungen – copy fixed per product spec. */
+const RULE_SCOPE_LIMITATIONS = [
+  "Nicht alle Sonderbauvorschriften werden automatisch geprüft.",
+  "Bundeslandspezifische Abweichungen von der MBO nur teilweise abgebildet.",
+  "KI-gestützte Extraktion aus PDF/IFC/DWG erfordert je nach Dateiqualität manuelle Nachprüfung.",
+  "Kein Ersatz für Rechtsgutachten, Sachverständigengutachten oder Baugenehmigung.",
+] as const;
+
 function RuleCard({ rule }: { rule: RuleMetadata }) {
   const status = getRuleStatus(rule.id);
   const severity = rule.checks?.[0]?.severity;
@@ -404,21 +412,18 @@ export default function RuleScope() {
             className="rule-scope-hero mb-6 rounded-md"
             style={{ background: "var(--side)", padding: "24px 28px" }}
           >
-            <p
-              className="mb-1 font-mono text-[9px] uppercase tracking-[2px]"
-              style={{ color: "#3A3A2A" }}
-            >
+            <p className="mb-1 font-mono text-[9px] uppercase tracking-[2px] text-on-dark-muted">
               Regelwerk · Stand {standLabel}
             </p>
             <h1
-              className="mb-2 font-serif text-[28px] font-semibold tracking-[-0.5px] text-[#F4F1EB]"
+              className="mb-2 font-serif text-[28px] font-semibold tracking-[-0.5px] text-on-dark-primary"
               style={{ fontFamily: "Fraunces, serif" }}
             >
               {stats.total} Prüfregeln abgedeckt
             </h1>
             <p
-              className="mb-4 font-mono text-[10px] leading-snug"
-              style={{ color: "#3A3A2A", lineHeight: 1.6, marginBottom: 18 }}
+              className="mb-4 font-mono text-[10px] leading-snug text-on-dark-secondary"
+              style={{ lineHeight: 1.6, marginBottom: 18 }}
             >
               BauPilot bündelt ausgewählte Regeln aus den wichtigsten Kapiteln der Bauordnungen und begleitenden
               Normen. Umfang und Genauigkeit wachsen mit jedem Release — nachfolgend der vollständige Katalog nach
@@ -435,8 +440,8 @@ export default function RuleScope() {
                   key={cell.label}
                   className="rounded-sm px-3 py-2 text-center"
                   style={{
-                    background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.05)",
+                    background: "var(--on-dark-surface)",
+                    border: "1px solid var(--on-dark-border)",
                     borderRadius: 2,
                   }}
                 >
@@ -446,7 +451,7 @@ export default function RuleScope() {
                   >
                     {cell.value}
                   </p>
-                  <p className="mt-1 font-mono text-[8px] uppercase" style={{ color: "#3A3A2A" }}>
+                  <p className="mt-1 font-mono text-[8px] uppercase text-on-dark-muted">
                     {cell.label}
                   </p>
                 </div>
@@ -522,11 +527,28 @@ export default function RuleScope() {
               );
             })
           )}
+
+          <div className="mt-10 rounded-sm border border-border bg-card p-5">
+            <div className="mb-3">
+              <h3 className="font-sans text-[11px] font-bold uppercase tracking-[1.2px] text-ink">
+                Einschränkungen & Hinweise
+              </h3>
+              <p className="mt-0.5 font-mono text-[9px] text-ink3">Transparenz zum Prüfumfang</p>
+            </div>
+            <ul className="space-y-2">
+              {RULE_SCOPE_LIMITATIONS.map((text, i) => (
+                <li key={i} className="flex items-start gap-2.5">
+                  <span className="mt-1.5 h-1 w-1 flex-shrink-0 rounded-full bg-ink3" />
+                  <span className="font-mono text-[9px] leading-relaxed text-ink2">{text}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
         <aside
           className="rule-scope-right min-h-0 overflow-y-auto"
-          style={{ padding: "28px 20px 28px 0", display: "flex", flexDirection: "column", gap: 16 }}
+          style={{ padding: "28px 20px 28px 0" }}
         >
           <SidePanel title="Kategorien" subtitle="Schnell zur Kategorie" delayMs={0}>
             <ul className="py-0">
@@ -553,102 +575,6 @@ export default function RuleScope() {
                   </li>
                 );
               })}
-            </ul>
-          </SidePanel>
-
-          <SidePanel title="Statusbedeutung" subtitle="Lesen der Regelkarten" delayMs={40}>
-            <ul className="divide-y divide-border px-4 py-2">
-              {(
-                [
-                  ["Abgedeckt", "Regel ist implementiert und wird im Prüflauf ausgewertet."],
-                  ["In Vorbereitung", "Regel ist dokumentiert; technische Umsetzung oder Tests laufen noch."],
-                  ["Eingeschränkt", "Gilt nur für bestimmte Bundesländer oder Sonderfälle — siehe Geltungsbereich."],
-                  ["Nur Information", "Kein harter Norm-Check; Hinweis oder Empfehlung ohne automatischen Befund."],
-                ] as const
-              ).map(([badge, text]) => (
-                <li key={badge} className="flex gap-2 py-3 first:pt-0 last:pb-0">
-                  <span
-                    className="mt-0.5 shrink-0 self-start font-mono text-[8px] font-medium uppercase text-ink2"
-                    style={{
-                      borderRadius: 2,
-                      padding: "2px 6px",
-                      background: "var(--bg2)",
-                    }}
-                  >
-                    {badge}
-                  </span>
-                  <p className="font-mono text-[9px] leading-snug text-ink2" style={{ lineHeight: 1.5 }}>
-                    {text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SidePanel>
-
-          <SidePanel title="Schweregrade" subtitle="Bedeutung für den Befund" delayMs={80}>
-            <ul className="divide-y divide-border px-4 py-2">
-              {(
-                [
-                  ["Fehler", "Klarer Bezug zur Norm; Abweichung sollte fachlich geprüft werden."],
-                  ["Hinweis", "Mögliche Abweichung oder Grenzfall — Kontext und Planung entscheiden."],
-                  ["Information", "Empfehlung ohne zwingenden Normzwang."],
-                ] as const
-              ).map(([badge, text]) => (
-                <li key={badge} className="flex gap-2 py-3 first:pt-0 last:pb-0">
-                  <span
-                    className={`mt-0.5 shrink-0 self-start font-mono text-[7px] font-medium uppercase ${
-                      badge === "Fehler"
-                        ? "bg-red-soft text-red"
-                        : badge === "Hinweis"
-                          ? "bg-amber-soft text-[#9A5010]"
-                          : "bg-bg2 text-ink3"
-                    }`}
-                    style={{ borderRadius: 2, padding: "2px 6px" }}
-                  >
-                    {badge}
-                  </span>
-                  <p className="font-mono text-[9px] leading-snug text-ink2" style={{ lineHeight: 1.5 }}>
-                    {text}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SidePanel>
-
-          <SidePanel title="Einschränkungen" subtitle="Transparente Grenzen" delayMs={120}>
-            <ul className="space-y-2 px-4 py-3">
-              {[
-                "Nicht alle Sonderbau- oder nutzungsspezifischen Vorschriften werden automatisch geprüft.",
-                "Länderspezifische Abweichungen vom MBO sind nur teilweise abgebildet.",
-                "KI-gestützte Extraktion aus PDF/IFC/DWG kann je nach Dateiqualität eine manuelle Nachkontrolle erfordern.",
-                "Ersetzt keine Rechtsauskunft, kein Fachgutachten und keine Baugenehmigung.",
-              ].map((line) => (
-                <li key={line} className="flex gap-2">
-                  <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-ink3" style={{ width: 4, height: 4 }} />
-                  <p className="font-mono text-[9px] leading-relaxed text-ink2" style={{ lineHeight: 1.6 }}>
-                    {line}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          </SidePanel>
-
-          <SidePanel title="Geplante Erweiterungen" subtitle="Nächste Schritte" delayMs={160}>
-            <ul className="divide-y divide-border px-4 py-2">
-              {(
-                [
-                  ["In Vorbereitung", "Erweiterte Sonderbauvorschriften"],
-                  ["In Prüfung", "Weitere LBO-spezifische Anpassungen"],
-                  ["In Vorbereitung", "Zusätzliche DIN-Normen für technische Ausstattung"],
-                ] as const
-              ).map(([badge, name]) => (
-                <li key={name} className="flex flex-wrap items-center gap-2 py-3 first:pt-0 last:pb-0">
-                  <span className="rounded-sm bg-amber-soft px-1.5 py-px font-mono text-[8px] font-medium uppercase text-[#9A5010]">
-                    {badge}
-                  </span>
-                  <span className="font-sans text-[11px] font-medium text-ink">{name}</span>
-                </li>
-              ))}
             </ul>
           </SidePanel>
         </aside>

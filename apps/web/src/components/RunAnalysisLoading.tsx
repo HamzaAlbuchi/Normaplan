@@ -50,18 +50,18 @@ export default function RunAnalysisLoading() {
           <div className="flex items-start gap-3">
             <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber animate-pulse-amber" />
             <div>
-              <p className="font-sans text-sm font-medium text-run-title">{label}</p>
-              <p className="mt-1 font-mono text-[9px] text-run-meta">Prüflauf aktiv</p>
+              <p className="font-sans text-sm font-medium text-on-dark-primary">{label}</p>
+              <p className="mt-1 font-mono text-[9px] text-on-dark-secondary">Prüflauf aktiv</p>
             </div>
           </div>
           <div className="text-right">
-            <p className="font-mono text-[8px] uppercase tracking-wide text-run-meta">Fortschritt</p>
+            <p className="font-mono text-[8px] uppercase tracking-wide text-on-dark-muted">Fortschritt</p>
             <p className="font-serif text-[44px] font-semibold leading-none text-amber">
               <span ref={pctRef}>0</span>%
             </p>
           </div>
         </div>
-        <div className="mt-4 h-[3px] w-full overflow-hidden rounded-sm bg-run-meta/40">
+        <div className="mt-4 h-[3px] w-full overflow-hidden rounded-sm bg-on-dark-border">
           <div ref={barRef} className="h-full rounded-sm bg-amber" style={{ width: "0%" }} />
         </div>
       </div>

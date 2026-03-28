@@ -57,7 +57,7 @@ export default function UserMenu({ variant = "header" }: { variant?: "header" | 
             {initials}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="truncate font-sans text-[11px] font-semibold text-[var(--nav-item-hover-text)]">
+            <p className="truncate font-sans text-[11px] font-semibold text-on-dark-nav-hover">
               {displayName}
             </p>
             <p className="font-mono text-[8px] uppercase tracking-wide text-[var(--nav-section-on-side)]">

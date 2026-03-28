@@ -21,11 +21,24 @@
   --card: #fafaf5;
   --border: rgba(24, 24, 15, 0.1);
   --border2: rgba(24, 24, 15, 0.18);
-  --nav-section-on-side: #2e2e1e;
-  --nav-item-on-side: #5a5a48;
-  --nav-item-hover-text: #c8c4b8;
-  --run-banner-title: #d8d4c4;
-  --run-banner-meta: #3a3a2a;
+
+  --on-dark-primary: rgba(255, 255, 255, 0.9);
+  --on-dark-secondary: rgba(255, 255, 255, 0.55);
+  --on-dark-muted: rgba(255, 255, 255, 0.3);
+  --on-dark-border: rgba(255, 255, 255, 0.08);
+  --on-dark-surface: rgba(255, 255, 255, 0.04);
+  --on-dark-nav: rgba(255, 255, 255, 0.35);
+  --on-dark-nav-hover: rgba(255, 255, 255, 0.7);
+  --on-dark-ghost: rgba(255, 255, 255, 0.45);
+  --on-dark-ghost-border: rgba(255, 255, 255, 0.12);
+  --on-dark-ghost-hover: rgba(255, 255, 255, 0.75);
+  --on-dark-ghost-border-hover: rgba(255, 255, 255, 0.25);
+
+  --nav-section-on-side: var(--on-dark-muted);
+  --nav-item-on-side: var(--on-dark-nav);
+  --nav-item-hover-text: var(--on-dark-nav-hover);
+  --run-banner-title: rgba(255, 255, 255, 0.85);
+  --run-banner-meta: var(--on-dark-secondary);
 }
 
 @layer base {

@@ -38,11 +38,12 @@ from colors import (
     C_BORDER,
     C_BORDER2,
     C_CARD,
-    C_HERO_META,
     C_HERO_TITLE,
     C_INK,
     C_INK2,
     C_INK3,
+    C_ON_DARK_MUTED,
+    C_ON_DARK_SECONDARY,
     C_RED_SOFT,
     C_RED,
     C_SIDE,
@@ -118,7 +119,7 @@ def _make_styles():
         fontName=MONO,
         fontSize=8,
         leading=10,
-        textColor=C_HERO_META,
+        textColor=C_ON_DARK_MUTED,
         spaceAfter=6,
         letterSpacing=1.5,
     )
@@ -137,7 +138,7 @@ def _make_styles():
         fontName=MONO,
         fontSize=9,
         leading=13,
-        textColor=C_HERO_META,
+        textColor=C_ON_DARK_SECONDARY,
         spaceAfter=12,
     )
     h2 = ParagraphStyle(
@@ -206,7 +207,7 @@ def _stat_cell(val: str, label: str, styles: dict, val_color: object) -> Table:
         alignment=TA_CENTER,
         fontSize=7,
         leading=9,
-        textColor=C_HERO_META,
+        textColor=C_ON_DARK_MUTED,
     )
     inner = Table(
         [
@@ -250,7 +251,7 @@ def _hero_block(payload: dict, styles: dict) -> Table:
                 _stat_cell(str(c.get("total", 0)), "Befunde gesamt", styles, C_HERO_TITLE),
                 _stat_cell(str(c.get("error", 0)), "Kritisch", styles, C_RED),
                 _stat_cell(str(c.get("warning", 0)), "Warnungen", styles, C_AMBER),
-                _stat_cell(str(c.get("info", 0)), "Hinweise", styles, C_HERO_META),
+                _stat_cell(str(c.get("info", 0)), "Hinweise", styles, C_HERO_TITLE),
             ]
         ],
         colWidths=[40 * mm, 40 * mm, 40 * mm, 40 * mm],

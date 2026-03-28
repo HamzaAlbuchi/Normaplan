@@ -86,7 +86,7 @@ export default function Layout() {
               BP
             </span>
             <div>
-              <span className="font-sans text-sm font-semibold text-[var(--nav-item-hover-text)]">BauPilot</span>
+              <span className="font-sans text-sm font-semibold text-on-dark-primary">BauPilot</span>
               <p className="font-mono text-[8px] uppercase tracking-[2px] text-[var(--nav-section-on-side)]">
                 Compliance
               </p>

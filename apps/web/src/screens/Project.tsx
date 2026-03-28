@@ -440,18 +440,22 @@ export default function Project() {
         className="animate-violation-hero relative mt-8 overflow-hidden rounded-md px-[26px] py-[22px]"
         style={{ background: "var(--side)" }}
       >
-        <div className="absolute bottom-5 left-[calc(100%-280px)] top-5 hidden w-px lg:block" style={{ background: "rgba(255,255,255,0.04)" }} />
+        <div className="absolute bottom-5 left-[calc(100%-280px)] top-5 hidden w-px bg-on-dark-surface lg:block" />
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_auto] lg:items-start lg:gap-12">
           <div>
-            <p className="font-mono text-[9px] font-normal uppercase tracking-[2px] text-[#3A3A2A]">Current compliance status</p>
+            <p className="font-mono text-[9px] font-normal uppercase tracking-[2px] text-on-dark-muted">
+              Current compliance status
+            </p>
             <div className="mt-3 flex flex-wrap items-end gap-3">
               <span
-                className="font-serif text-[52px] font-semibold leading-none tracking-[-2px] text-[#F4F1EB]"
+                className="font-serif text-[52px] font-semibold leading-none tracking-[-2px] text-on-dark-primary"
                 style={{ fontFamily: "Fraunces, serif" }}
               >
                 {openCount}
               </span>
-              <span className="mb-2 font-mono text-[11px] font-normal uppercase text-[#4A4A3A]">violations detected</span>
+              <span className="mb-2 font-mono text-[11px] font-normal uppercase text-on-dark-secondary">
+                violations detected
+              </span>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
               <span
@@ -461,8 +465,8 @@ export default function Project() {
                 Critical {criticalOpen}
               </span>
               <span
-                className="rounded-sm px-[9px] py-0.5 font-mono text-[9px] font-medium uppercase"
-                style={{ background: "rgba(255,255,255,0.06)", color: "#6A6A58" }}
+                className="rounded-sm px-[9px] py-0.5 font-mono text-[9px] font-medium uppercase text-on-dark-secondary"
+                style={{ background: "var(--on-dark-surface)" }}
               >
                 Open {openCount}
               </span>
@@ -474,7 +478,7 @@ export default function Project() {
               </span>
             </div>
           </div>
-          <div className="flex flex-col gap-2.5 border-0 lg:border-l lg:border-white/[0.04] lg:pl-10">
+          <div className="flex flex-col gap-2.5 border-0 lg:border-l lg:border-on-dark-border lg:pl-10">
             <Button variant="primary" size="md" className="w-full min-w-[200px] justify-center sm:w-auto" asChild>
               <Link to={`/violations?projectId=${projectId}`}>Show all violations →</Link>
             </Button>
@@ -482,7 +486,7 @@ export default function Project() {
               type="button"
               onClick={() => void handleExportPdf()}
               disabled={!latestRun || !plans.some((p) => p.id === latestRun.planId)}
-              className="inline-flex h-9 w-full min-w-[200px] items-center justify-center rounded-sm border border-white/[0.08] bg-transparent font-sans text-[11px] font-semibold text-[#5A5A48] transition-colors hover:border-white/20 hover:text-[#8A8A78] disabled:opacity-40 sm:w-auto"
+              className="inline-flex h-9 w-full min-w-[200px] items-center justify-center rounded-sm border border-on-dark-ghost-border bg-transparent font-sans text-[11px] font-semibold text-on-dark-ghost transition-colors hover:border-on-dark-ghost-border-hover hover:text-on-dark-ghost-hover disabled:opacity-40 sm:w-auto"
             >
               Export PDF report
             </button>

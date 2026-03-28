@@ -4,8 +4,9 @@ Use these names only; do not scatter hex literals in layout code.
 """
 
 from reportlab.lib import colors as rl_colors
+from reportlab.lib.colors import Color
 
-# Surfaces & text
+# Surfaces & text (light surfaces)
 BG = "#F4F1EB"
 BG2 = "#EDEADE"
 INK = "#18180F"
@@ -13,8 +14,14 @@ INK2 = "#6B6860"
 INK3 = "#A8A49C"
 SIDE = "#111108"
 CARD = "#FAFAF5"
-HERO_META = "#3A3A2A"
 HERO_TITLE = "#F4F1EB"
+
+# Text on dark surfaces (SIDE hero, etc.) — align with --on-dark-* in apps/web/src/index.css
+C_ON_DARK_PRIMARY = Color(1, 1, 1, alpha=0.90)
+C_ON_DARK_SECONDARY = Color(1, 1, 1, alpha=0.55)
+C_ON_DARK_MUTED = Color(1, 1, 1, alpha=0.30)
+C_ON_DARK_BORDER = Color(1, 1, 1, alpha=0.08)
+C_ON_DARK_SURFACE = Color(1, 1, 1, alpha=0.04)
 
 # Accent system
 AMBER = "#D9772A"
@@ -32,7 +39,6 @@ BORDER = "#E3DFD4"
 BORDER2 = "#D8D3C8"
 # Hero stat cells on dark background
 STAT_CELL_BG = "#1A1A14"
-STAT_CELL_BORDER = "#2E2E26"
 
 # ReportLab Color objects (for TableStyle etc.)
 C_BG = rl_colors.HexColor(BG)
@@ -42,7 +48,6 @@ C_INK2 = rl_colors.HexColor(INK2)
 C_INK3 = rl_colors.HexColor(INK3)
 C_SIDE = rl_colors.HexColor(SIDE)
 C_CARD = rl_colors.HexColor(CARD)
-C_HERO_META = rl_colors.HexColor(HERO_META)
 C_HERO_TITLE = rl_colors.HexColor(HERO_TITLE)
 C_AMBER = rl_colors.HexColor(AMBER)
 C_AMBER_SOFT = rl_colors.HexColor(AMBER_SOFT)
@@ -56,5 +61,5 @@ C_BLUE_SOFT = rl_colors.HexColor(BLUE_SOFT)
 C_BORDER = rl_colors.HexColor(BORDER)
 C_BORDER2 = rl_colors.HexColor(BORDER2)
 C_STAT_CELL_BG = rl_colors.HexColor(STAT_CELL_BG)
-C_STAT_CELL_BORDER = rl_colors.HexColor(STAT_CELL_BORDER)
+C_STAT_CELL_BORDER = C_ON_DARK_BORDER
 C_WHITE = rl_colors.white
