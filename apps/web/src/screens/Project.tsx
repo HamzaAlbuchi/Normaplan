@@ -29,8 +29,8 @@ function ProjectViolationsSummary({ projectId }: { projectId: string }) {
       />
       <CardContent>
         <div className="flex flex-wrap items-center gap-4">
-          <span className="text-sm text-slate-600">
-            <strong>{stats.total}</strong> Verstoß{stats.total !== 1 ? "e" : ""} gesamt
+          <span className="font-sans text-sm text-ink2">
+            <strong className="font-serif text-lg text-ink">{stats.total}</strong> Verstoß{stats.total !== 1 ? "e" : ""} gesamt
           </span>
           {stats.openCount > 0 && (
             <Badge variant="default">{stats.openCount} offen</Badge>
@@ -82,13 +82,13 @@ function ProjectAssignments({ projectId, organizationId }: { projectId: string; 
         {assignments.length > 0 && (
           <ul className="space-y-2">
             {assignments.map((a) => (
-              <li key={a.userId} className="flex items-center justify-between rounded-md bg-slate-50 px-3 py-2">
-                <span className="text-sm text-slate-700">{a.name || a.email}</span>
+              <li key={a.userId} className="flex items-center justify-between rounded-sm bg-bg2 px-3 py-2">
+                <span className="font-sans text-sm text-ink">{a.name || a.email}</span>
                 <button
                   type="button"
                   onClick={() => removeMutation.mutate(a.userId)}
                   disabled={removeMutation.isPending}
-                  className="text-xs text-slate-500 hover:text-red-600 transition-colors"
+                  className="font-mono text-[9px] text-ink2 hover:text-red transition-colors"
                 >
                   Entfernen
                 </button>
@@ -99,7 +99,7 @@ function ProjectAssignments({ projectId, organizationId }: { projectId: string; 
         {available.length > 0 && (
           <div className="mt-3">
             <select
-              className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="h-9 w-full rounded-sm border border-border2 bg-card px-3 font-sans text-sm text-ink focus:border-ink2 focus:outline-none"
               onChange={(e) => {
                 const v = e.target.value;
                 if (v) { addMutation.mutate(v); e.target.value = ""; }
@@ -113,7 +113,7 @@ function ProjectAssignments({ projectId, organizationId }: { projectId: string; 
           </div>
         )}
         {architects.length === 0 && (
-          <p className="text-sm text-slate-500">Laden Sie zuerst Architekten ins Büro ein.</p>
+          <p className="font-sans text-sm text-ink2">Laden Sie zuerst Architekten ins Büro ein.</p>
         )}
       </CardContent>
     </Card>
@@ -215,7 +215,7 @@ export default function Project() {
   const breadcrumb = (
     <Link
       to="/"
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+      className="mb-4 inline-flex items-center gap-1.5 font-sans text-xs font-medium text-ink2 hover:text-ink transition-colors"
     >
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -231,45 +231,45 @@ export default function Project() {
         description={
           <>
             {project?.organizationName && (
-              <span className="block text-slate-500">Büro: {project.organizationName}</span>
+              <span className="block font-sans text-sm text-ink2">Büro: {project.organizationName}</span>
             )}
             {project?.projectType && (
-              <span className="block text-slate-500">
+              <span className="block font-sans text-sm text-ink2">
                 Projekttyp: {PROJECT_TYPES.find((t) => t.value === project.projectType)?.label ?? project.projectType}
               </span>
             )}
             {canEdit && project?.organizationId && (
-              <span className="block text-slate-500">
+              <span className="block font-sans text-sm text-ink2">
                 Status:{" "}
                 <select
                   value={project.status ?? "ongoing"}
                   onChange={(e) => updateStatusMutation.mutate(e.target.value as ProjectStatus)}
                   disabled={updateStatusMutation.isPending}
-                  className="ml-1 rounded border border-slate-300 bg-white px-2 py-0.5 text-sm text-slate-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="ml-1 rounded-sm border border-border2 bg-card px-2 py-0.5 font-sans text-sm text-ink focus:border-ink2 focus:outline-none"
                 >
                   {PROJECT_STATUSES.map((s) => (
                     <option key={s.value} value={s.value}>{s.label}</option>
                   ))}
                 </select>
                 {statusSaved && (
-                  <span className="ml-2 text-xs text-emerald-600">Gespeichert</span>
+                  <span className="ml-2 font-mono text-[9px] text-green">Gespeichert</span>
                 )}
               </span>
             )}
             {!canEdit && project?.status && project.status !== "ongoing" && (
-              <span className="block text-slate-500">
+              <span className="block font-sans text-sm text-ink2">
                 Status: {PROJECT_STATUSES.find((s) => s.value === project.status)?.label ?? project.status}
               </span>
             )}
             {project?.zipCode && (
-              <span className="block text-slate-500">
+              <span className="block font-sans text-sm text-ink2">
                 Standort: {project.zipCode}
                 {project?.state && (
-                  <span className="text-slate-400"> · {STATE_NAMES[project.state] ?? project.state}</span>
+                  <span className="text-ink3"> · {STATE_NAMES[project.state] ?? project.state}</span>
                 )}
               </span>
             )}
-            <span className="block text-slate-500">Grundrisse hochladen und Prüflauf starten.</span>
+            <span className="block font-sans text-sm text-ink2">Grundrisse hochladen und Prüflauf starten.</span>
           </>
         }
         breadcrumb={breadcrumb}
@@ -284,7 +284,7 @@ export default function Project() {
                   variant="ghost"
                   onClick={handleDeleteProject}
                   disabled={deleteProjectMutation.isPending}
-                  className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                  className="text-red hover:bg-red-soft"
                 >
                   {deleteProjectMutation.isPending ? "Wird gelöscht…" : "Projekt löschen"}
                 </Button>
@@ -309,33 +309,40 @@ export default function Project() {
             description="JSON-, PDF-, IFC/BIM- oder DWG/DXF-Datei mit Plan-Elementen (Räume, Flure, Türen, Fenster, Treppen, Rettungswege). DWG/DXF erfordert GEMINI_API_KEY und CONVERTAPI_SECRET."
           />
           <CardContent>
-            <div>
+            <label className="mx-0 mt-4 mb-4 flex cursor-pointer flex-col items-center justify-center rounded-md border-[1.5px] border-dashed border-border2 px-6 py-10 transition-colors hover:border-amber hover:bg-amber-soft">
+              <span className="mb-3 flex h-9 w-9 items-center justify-center rounded-full border border-border2 bg-card text-ink2">
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </span>
+              <span className="font-sans text-xs font-semibold text-ink">Datei auswählen</span>
+              <span className="mt-1 font-mono text-[9px] text-ink2">JSON, PDF, IFC, DWG/DXF</span>
               <input
                 ref={fileInputRef}
                 type="file"
                 accept=".json,.pdf,.ifc,.dwg,.dxf"
                 onChange={handleFileChange}
                 disabled={uploading}
-                className="block w-full text-sm text-slate-500 file:mr-4 file:rounded-md file:border-0 file:bg-slate-100 file:px-4 file:py-2 file:text-sm file:font-medium file:text-slate-700 hover:file:bg-slate-200"
+                className="sr-only"
               />
-              {uploadError && <p className="mt-2 text-sm text-red-600">{uploadError}</p>}
-              {uploading && <p className="mt-2 text-sm text-slate-500">Wird hochgeladen…</p>}
-            </div>
+            </label>
+            {uploadError && <p className="mt-2 font-mono text-sm text-red">{uploadError}</p>}
+            {uploading && <p className="mt-2 font-sans text-sm text-ink2">Wird hochgeladen…</p>}
           </CardContent>
         </Card>
       )}
 
       <div className="mb-4">
-        <h2 className="text-sm font-semibold text-slate-900">Pläne in diesem Projekt</h2>
+        <h2 className="font-sans text-[11px] font-bold uppercase tracking-[1.2px] text-ink">Pläne in diesem Projekt</h2>
       </div>
 
       {isLoading ? (
-        <p className="text-sm text-slate-500">Lade Pläne…</p>
+        <p className="font-sans text-sm text-ink2">Lade Pläne…</p>
       ) : plans.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-sm text-slate-600">Noch keine Pläne.</p>
-            <p className="mt-1 text-sm text-slate-500">Laden Sie oben eine Datei hoch.</p>
+            <p className="font-sans text-sm text-ink2">Noch keine Pläne.</p>
+            <p className="mt-1 font-mono text-[9px] text-ink3">Laden Sie oben eine Datei hoch.</p>
           </CardContent>
         </Card>
       ) : (
@@ -343,15 +350,15 @@ export default function Project() {
           {plans.map((p: PlanSummary) => (
             <div
               key={p.id}
-              className="group flex items-center gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-slate-300"
+              className="group flex items-center gap-4 rounded-md border border-border bg-card px-5 py-4 transition-colors hover:bg-white"
             >
               <Link to={`/plan/${p.id}`} className="min-w-0 flex-1">
-                <p className="font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
+                <p className="truncate font-sans text-xs font-semibold text-ink group-hover:text-amber transition-colors">
                   {p.name}
                 </p>
-                <p className="mt-0.5 text-sm text-slate-500 truncate">
+                <p className="mt-0.5 truncate font-mono text-[9px] text-ink2">
                   {p.fileName} · {p.status}
-                  {p.lastRunId && <span className="text-blue-600"> · Bericht</span>}
+                  {p.lastRunId && <span className="text-blue"> · Bericht</span>}
                 </p>
               </Link>
               {canEdit && (
@@ -360,7 +367,7 @@ export default function Project() {
                   size="sm"
                   onClick={(e) => handleDeletePlan(p, e)}
                   disabled={deletePlanMutation.isPending}
-                  className="text-slate-500 hover:text-red-600"
+                  className="text-ink2 hover:text-red"
                 >
                   Löschen
                 </Button>

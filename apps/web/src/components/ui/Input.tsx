@@ -1,7 +1,7 @@
 import { forwardRef } from "react";
 
 const base =
-  "w-full rounded-md border border-slate-300 bg-white px-3 text-slate-900 placeholder-slate-400 shadow-sm transition-colors focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-slate-50 disabled:text-slate-500";
+  "w-full rounded-sm border border-border2 bg-card px-3 font-sans text-sm text-ink placeholder-ink3 transition-colors focus:border-ink2 focus:outline-none disabled:bg-bg2 disabled:text-ink3";
 
 interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -14,17 +14,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="mb-1.5 block text-sm font-medium text-slate-700">
+          <label htmlFor={inputId} className="mb-1.5 block font-sans text-sm font-medium text-ink">
             {label}
           </label>
         )}
-        <input
-          ref={ref}
-          id={inputId}
-          className={`${base} h-9 ${className}`}
-          {...props}
-        />
-        {error && <p className="mt-1.5 text-sm text-red-600">{error}</p>}
+        <input ref={ref} id={inputId} className={`${base} h-9 ${className}`} {...props} />
+        {error && <p className="mt-1.5 font-mono text-sm text-red">{error}</p>}
       </div>
     );
   }

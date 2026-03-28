@@ -7,10 +7,22 @@ import { Button, Card, CardHeader, CardContent, Input, PageHeader } from "../com
 import StatusCard from "../components/StatusCard";
 
 const STATE_NAMES: Record<string, string> = {
-  BW: "Baden-Württemberg", BY: "Bayern", BE: "Berlin", BB: "Brandenburg", HB: "Bremen",
-  HH: "Hamburg", HE: "Hessen", MV: "Mecklenburg-Vorpommern", NI: "Niedersachsen",
-  NW: "Nordrhein-Westfalen", RP: "Rheinland-Pfalz", SL: "Saarland", SN: "Sachsen",
-  ST: "Sachsen-Anhalt", SH: "Schleswig-Holstein", TH: "Thüringen",
+  BW: "Baden-Württemberg",
+  BY: "Bayern",
+  BE: "Berlin",
+  BB: "Brandenburg",
+  HB: "Bremen",
+  HH: "Hamburg",
+  HE: "Hessen",
+  MV: "Mecklenburg-Vorpommern",
+  NI: "Niedersachsen",
+  NW: "Nordrhein-Westfalen",
+  RP: "Rheinland-Pfalz",
+  SL: "Saarland",
+  SN: "Sachsen",
+  ST: "Sachsen-Anhalt",
+  SH: "Schleswig-Holstein",
+  TH: "Thüringen",
 };
 
 const ROLE_LABELS: Record<string, string> = {
@@ -19,6 +31,18 @@ const ROLE_LABELS: Record<string, string> = {
   architect: "Architekt",
   reviewer: "Prüfer",
   viewer: "Betrachter",
+};
+
+function projectHealthBar(p: ProjectSummary): "red" | "amber" | "green" | "blue" {
+  if ((p.planCount ?? 0) > 0) return "green";
+  return "blue";
+}
+
+const barColor: Record<string, string> = {
+  red: "bg-red",
+  amber: "bg-amber",
+  green: "bg-green",
+  blue: "bg-blue",
 };
 
 export default function Dashboard() {
@@ -94,15 +118,12 @@ export default function Dashboard() {
                 onChange={(e) => setNewOrgName(e.target.value)}
                 placeholder="z. B. Muster Architekten"
               />
-              <Button
-                type="submit"
-                disabled={createOrgMutation.isPending || !newOrgName.trim()}
-              >
+              <Button type="submit" disabled={createOrgMutation.isPending || !newOrgName.trim()}>
                 {createOrgMutation.isPending ? "Wird erstellt…" : "Büro anlegen"}
               </Button>
             </form>
             {createOrgMutation.isError && (
-              <p className="mt-4 text-sm text-red-600">
+              <p className="mt-4 font-mono text-sm text-red">
                 {createOrgMutation.error instanceof Error ? createOrgMutation.error.message : "Fehler"}
               </p>
             )}
@@ -112,48 +133,50 @@ export default function Dashboard() {
     );
   }
 
-  return (
-    <div>
-      <PageHeader
-        title="Projekte"
-        description={
-          canCreateProject
-            ? "Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften."
-            : "Ihre zugewiesenen Projekte und Prüfberichte."
-        }
-        breadcrumb={
-          orgs.length > 0 && (
-            <p className="mb-2 text-xs text-slate-500">
-              {orgs.map((o, i) => (
-                <span key={o.id}>
-                  {i > 0 && " · "}
-                  <Link to={`/org/${o.id}`} className="text-slate-500 hover:text-slate-700">
-                    {o.name} ({ROLE_LABELS[o.role] ?? o.role})
-                  </Link>
-                </span>
-              ))}
-            </p>
-          )
-        }
-      />
+  const filterOpts = [
+    { value: "ongoing", label: "Nur laufende" },
+    { value: "ongoing,paused", label: "+ Pausierte" },
+    { value: "ongoing,paused,ended", label: "+ Abgeschlossene" },
+  ];
 
-      <div className="mb-8">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <label className="text-sm font-medium text-slate-600">Projekte einbeziehen:</label>
+  return (
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_340px]">
+      <div className="min-w-0 space-y-6">
+        <PageHeader
+          title="Projekte"
+          description={
+            canCreateProject
+              ? "Erstellen Sie ein Projekt und laden Sie Grundrisse hoch. BauPilot prüft mögliche Verstöße gegen Bauvorschriften."
+              : "Ihre zugewiesenen Projekte und Prüfberichte."
+          }
+          breadcrumb={
+            orgs.length > 0 ? (
+              <p className="mb-3 font-mono text-[9px] text-ink2">
+                {orgs.map((o, i) => (
+                  <span key={o.id}>
+                    {i > 0 && " · "}
+                    <Link to={`/org/${o.id}`} className="text-amber hover:underline">
+                      {o.name} ({ROLE_LABELS[o.role] ?? o.role})
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            ) : null
+          }
+        />
+
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <span className="font-sans text-sm font-medium text-ink2">Projekte einbeziehen:</span>
           <div className="flex flex-wrap gap-2">
-            {[
-              { value: "ongoing", label: "Nur laufende" },
-              { value: "ongoing,paused", label: "+ Pausierte" },
-              { value: "ongoing,paused,ended", label: "+ Abgeschlossene" },
-            ].map((opt) => (
+            {filterOpts.map((opt) => (
               <button
                 key={opt.value}
                 type="button"
                 onClick={() => setProjectStatusFilter(opt.value)}
-                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                className={`rounded-sm border px-2 py-0.5 font-mono text-[9px] transition-colors ${
                   projectStatusFilter === opt.value
-                    ? "bg-slate-800 text-white"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    ? "border-ink bg-ink text-bg"
+                    : "border-border2 text-ink2 hover:border-ink2 hover:text-ink"
                 }`}
               >
                 {opt.label}
@@ -161,6 +184,138 @@ export default function Dashboard() {
             ))}
           </div>
         </div>
+
+        {canCreateProject && (
+          <Card>
+            <CardHeader title="Neues Projekt" description="Projekt anlegen und Grundrisse hochladen." />
+            <CardContent>
+              <form onSubmit={handleCreateProject} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-end">
+                  <div className="min-w-0 flex-1">
+                    <Input
+                      label="Projektname"
+                      type="text"
+                      value={newProjectName}
+                      onChange={(e) => setNewProjectName(e.target.value)}
+                      placeholder="Projektname eingeben"
+                    />
+                  </div>
+                  <div className="w-full sm:w-28">
+                    <Input
+                      label="PLZ"
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={5}
+                      value={newProjectZip}
+                      onChange={(e) => setNewProjectZip(e.target.value.replace(/\D/g, ""))}
+                      placeholder="80331"
+                    />
+                  </div>
+                  <div className="w-full sm:w-44">
+                    <label className="mb-1.5 block font-sans text-sm font-medium text-ink">Projekttyp</label>
+                    <select
+                      value={newProjectType}
+                      onChange={(e) => setNewProjectType(e.target.value as ProjectType)}
+                      className="h-9 w-full rounded-sm border border-border2 bg-card px-3 font-sans text-sm text-ink focus:border-ink2 focus:outline-none"
+                    >
+                      {PROJECT_TYPES.map((t) => (
+                        <option key={t.value} value={t.value}>
+                          {t.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <Button type="submit" disabled={createProjectMutation.isPending || !newProjectName.trim() || newProjectZip.length !== 5} size="lg">
+                  {createProjectMutation.isPending ? "Wird erstellt…" : "Projekt anlegen"}
+                </Button>
+              </form>
+              {createProjectMutation.isError && (
+                <p className="mt-4 font-mono text-sm text-red">
+                  {createProjectMutation.error instanceof Error ? createProjectMutation.error.message : "Fehler"}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        <div>
+          <h2 className="font-sans text-[11px] font-bold uppercase tracking-[1.2px] text-ink">Projektliste</h2>
+        </div>
+
+        {isLoading ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="font-mono text-sm text-ink2">Projekte werden geladen…</p>
+            </CardContent>
+          </Card>
+        ) : projects.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="font-sans text-sm text-ink2">Noch keine Projekte.</p>
+              <p className="mt-1 font-mono text-[9px] text-ink3">
+                {canCreateProject
+                  ? "Legen Sie oben ein Projekt an und laden Sie einen Grundriss hoch."
+                  : "Sie haben noch keine zugewiesenen Projekte."}
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="space-y-2">
+            {projects.map((p: ProjectSummary) => {
+              const health = projectHealthBar(p);
+              const totalV = p.planCount;
+              return (
+                <Link
+                  key={p.id}
+                  to={`/project/${p.id}`}
+                  className="group flex items-stretch overflow-hidden rounded-md border border-border bg-card transition-colors hover:bg-white"
+                >
+                  <div className={`w-[3px] shrink-0 ${barColor[health]}`} aria-hidden />
+                  <div className="flex min-w-0 flex-1 items-center gap-4 px-4 py-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-sans text-xs font-semibold text-ink group-hover:text-amber">{p.name}</p>
+                      <p className="mt-0.5 font-mono text-[9px] text-ink2">
+                        {PROJECT_STATUSES.find((s) => s.value === (p.status ?? "ongoing"))?.label ?? "Laufend"}
+                        {" · "}
+                        {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
+                        {p.projectType && (
+                          <>
+                            {" · "}
+                            {PROJECT_TYPES.find((t) => t.value === p.projectType)?.label ?? p.projectType}
+                          </>
+                        )}
+                        {p.state && <> · {STATE_NAMES[p.state] ?? p.state}</>}
+                      </p>
+                      {p.architects && p.architects.length > 0 && (
+                        <p className="mt-0.5 font-mono text-[8px] text-ink3">
+                          Architekten: {p.architects.map((a) => a.name || a.email).join(", ")}
+                        </p>
+                      )}
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p
+                        className={`font-serif text-xl font-semibold leading-none ${
+                          health === "red" ? "text-red" : health === "amber" ? "text-amber" : health === "green" ? "text-green" : "text-blue"
+                        }`}
+                      >
+                        {totalV}
+                      </p>
+                      <p className="font-mono text-[8px] uppercase tracking-wide text-ink3">Pläne</p>
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+
+        <p className="font-mono text-[8px] text-ink3">
+          Hinweis: Dieses Tool gibt nur mögliche Verstöße an. Es ersetzt keine behördliche Prüfung.
+        </p>
+      </div>
+
+      <div className="min-w-0 lg:sticky lg:top-[70px] lg:self-start">
         <StatusCard
           runCount={stats?.runCount ?? 0}
           warningCount={stats?.warningCount ?? 0}
@@ -170,138 +325,6 @@ export default function Dashboard() {
           title="Prüfergebnisse"
         />
       </div>
-
-      {canCreateProject && (
-        <Card className="mb-8">
-          <CardHeader
-            title="Neues Projekt"
-            description="Projekt anlegen und Grundrisse hochladen."
-          />
-          <CardContent>
-            <form onSubmit={handleCreateProject} className="flex flex-col gap-4 sm:flex-row sm:items-end">
-              <div className="flex flex-1 flex-col gap-4 sm:flex-row sm:items-end">
-                <div className="flex-1 min-w-0">
-                  <Input
-                    label="Projektname"
-                    type="text"
-                    value={newProjectName}
-                    onChange={(e) => setNewProjectName(e.target.value)}
-                    placeholder="Projektname eingeben"
-                  />
-                </div>
-                <div className="w-full sm:w-28">
-                  <Input
-                    label="PLZ"
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={5}
-                    value={newProjectZip}
-                    onChange={(e) => setNewProjectZip(e.target.value.replace(/\D/g, ""))}
-                    placeholder="80331"
-                  />
-                </div>
-                <div className="w-full sm:w-44">
-                  <label className="mb-1.5 block text-sm font-medium text-slate-700">
-                    Projekttyp
-                  </label>
-                  <select
-                    value={newProjectType}
-                    onChange={(e) => setNewProjectType(e.target.value as ProjectType)}
-                    className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-slate-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  >
-                    {PROJECT_TYPES.map((t) => (
-                      <option key={t.value} value={t.value}>
-                        {t.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <Button
-                type="submit"
-                disabled={createProjectMutation.isPending || !newProjectName.trim() || newProjectZip.length !== 5}
-                size="lg"
-              >
-                {createProjectMutation.isPending ? "Wird erstellt…" : "Projekt anlegen"}
-              </Button>
-            </form>
-            {createProjectMutation.isError && (
-              <p className="mt-4 text-sm text-red-600">
-                {createProjectMutation.error instanceof Error ? createProjectMutation.error.message : "Fehler"}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="mb-6">
-        <h2 className="text-sm font-semibold text-slate-900">Projektliste</h2>
-      </div>
-
-      {isLoading ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-slate-500">Projekte werden geladen…</p>
-          </CardContent>
-        </Card>
-      ) : projects.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-sm text-slate-600">Noch keine Projekte.</p>
-            <p className="mt-1 text-sm text-slate-500">
-              {canCreateProject
-                ? "Legen Sie oben ein Projekt an und laden Sie einen Grundriss hoch."
-                : "Sie haben noch keine zugewiesenen Projekte."}
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {projects.map((p: ProjectSummary) => (
-            <Link
-              key={p.id}
-              to={`/project/${p.id}`}
-              className="group flex items-center gap-4 rounded-lg border border-slate-200 bg-white px-5 py-4 shadow-sm transition-all hover:border-slate-300 hover:shadow"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium text-slate-900 truncate group-hover:text-blue-600 transition-colors">
-                  {p.name}
-                </p>
-                <p className="mt-0.5 text-sm text-slate-500">
-                  <span className="text-slate-400">
-                    {PROJECT_STATUSES.find((s) => s.value === (p.status ?? "ongoing"))?.label ?? "Laufend"}
-                  </span>
-                  <span className="text-slate-400"> · </span>
-                  {p.planCount} {p.planCount === 1 ? "Plan" : "Pläne"}
-                  {p.projectType && (
-                    <span className="text-slate-400">
-                      {" · "}
-                      {PROJECT_TYPES.find((t) => t.value === p.projectType)?.label ?? p.projectType}
-                    </span>
-                  )}
-                  {p.state && (
-                    <span className="text-slate-400"> · {STATE_NAMES[p.state] ?? p.state}</span>
-                  )}
-                </p>
-                {p.architects && p.architects.length > 0 && (
-                  <p className="mt-0.5 text-xs text-slate-400">
-                    Architekten: {p.architects.map((a) => a.name || a.email).join(", ")}
-                  </p>
-                )}
-              </div>
-              <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-md text-slate-400 group-hover:bg-slate-100 group-hover:text-slate-600 transition-colors">
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                </svg>
-              </span>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <p className="mt-10 text-xs text-slate-400">
-        Hinweis: Dieses Tool gibt nur mögliche Verstöße an. Es ersetzt keine behördliche Prüfung.
-      </p>
     </div>
   );
 }

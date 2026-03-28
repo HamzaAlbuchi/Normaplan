@@ -54,64 +54,57 @@ function CanonicalFindingCard({
   const primaryViolation = violationById.get(f.primaryRawId);
   const status = primaryViolation?.status ?? "open";
   const canReview = status === "open" && f.rawSourceFindingIds.length > 0;
-  const severityClass =
-    f.severity === "error"
-      ? "border-l-4 border-red-500 bg-red-50/30"
-      : f.severity === "warning"
-        ? "border-l-4 border-amber-500 bg-amber-50/30"
-        : "border-l-4 border-slate-300 bg-slate-50/50";
+  const dotColor =
+    f.severity === "error" ? "bg-red shadow-[0_0_0_3px_rgba(184,50,50,0.125)]" : f.severity === "warning" ? "bg-amber shadow-[0_0_0_3px_rgba(217,119,42,0.125)]" : "bg-blue shadow-[0_0_0_3px_rgba(30,78,128,0.125)]";
 
   const sourceLabel = SOURCE_BADGE_LABELS[f.primarySource];
 
   return (
-    <div className={`rounded-lg border border-slate-200 bg-white p-4 shadow-sm ${severityClass}`}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium uppercase text-slate-500">{f.title}</span>
-            <Badge variant={f.primarySource === "AI_ONLY" ? "info" : "default"} className="text-[10px]">
-              {sourceLabel}
-            </Badge>
-            {status !== "open" && (
-              <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>
-            )}
+    <div className="rounded-md border border-border bg-card transition-colors hover:bg-bg print:break-inside-avoid">
+      <div className="grid grid-cols-[14px_1fr_auto] gap-3 px-[18px] py-3.5 items-start">
+        <span className={`mt-1.5 h-[7px] w-[7px] shrink-0 rounded-full ${dotColor}`} aria-hidden />
+        <div className="min-w-0">
+          <p className="font-mono text-[8px] uppercase tracking-wide text-ink3">{f.title}</p>
+          <p className="mt-0.5 font-sans text-xs font-semibold text-ink">{f.description}</p>
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            <Badge variant={f.primarySource === "AI_ONLY" ? "info" : "default"}>{sourceLabel}</Badge>
+            {status !== "open" && <Badge variant={statusBadgeVariant(status)}>{STATUS_LABELS[status] ?? status}</Badge>}
             <Badge variant={severityBadgeVariant(f.severity)}>
               {f.severity === "error" ? "Kritisch" : f.severity === "warning" ? "Warnung" : "Hinweis"}
             </Badge>
           </div>
-          <p className="mt-2 text-slate-800">{f.description}</p>
           {f.suggestion && (
-            <p className="mt-2 text-sm text-slate-600">
-              <strong>Vorschlag:</strong> {f.suggestion}
+            <p className="mt-2 font-sans text-sm text-ink2">
+              <span className="font-semibold">Vorschlag:</span> {f.suggestion}
             </p>
           )}
-          {f.reference && (
-            <p className="mt-1 text-xs text-slate-400">Referenz: {f.reference}</p>
+          {f.reference && <p className="mt-1 font-mono text-[8px] text-ink3">Referenz: {f.reference}</p>}
+          {f.affectedElementIds.length > 0 && (
+            <p className="mt-1 font-mono text-[9px] text-ink2">Elemente: {f.affectedElementIds.join(", ")}</p>
+          )}
+          {(status === "dismissed" || status === "deferred") && primaryViolation && (primaryViolation.reason || primaryViolation.comment) && (
+            <p className="mt-2 font-mono text-[9px] text-ink2">
+              {primaryViolation.reason && <span>Grund: {REASON_LABELS[primaryViolation.reason] ?? primaryViolation.reason}</span>}
+              {primaryViolation.comment && <span className="block mt-0.5">Kommentar: {primaryViolation.comment}</span>}
+              {primaryViolation.decidedAt && (
+                <span className="block mt-0.5 text-ink3">
+                  Entscheidung: {new Date(primaryViolation.decidedAt).toLocaleString("de-DE")}
+                </span>
+              )}
+            </p>
           )}
         </div>
-        {f.measuredValue != null && f.requiredValue != null && (
-          <div className="text-right text-sm whitespace-nowrap">
-            <span className="text-slate-500">{f.measuredValue} m</span>
-            <span className="mx-1">→</span>
-            <span className="text-slate-700">min. {f.requiredValue} m</span>
+        {f.measuredValue != null && f.requiredValue != null ? (
+          <div className="text-right font-mono text-[10px] whitespace-nowrap">
+            <span className="text-red">{f.measuredValue} m</span>
+            <span className="mx-1 text-ink3">→</span>
+            <span className="text-green">min. {f.requiredValue} m</span>
           </div>
+        ) : (
+          <span />
         )}
       </div>
-      {f.affectedElementIds.length > 0 && (
-        <p className="mt-2 text-xs text-slate-500">Betroffene Elemente: {f.affectedElementIds.join(", ")}</p>
-      )}
-      {(status === "dismissed" || status === "deferred") && primaryViolation && (primaryViolation.reason || primaryViolation.comment) && (
-        <p className="mt-2 text-xs text-slate-500">
-          {primaryViolation.reason && <span>Grund: {REASON_LABELS[primaryViolation.reason] ?? primaryViolation.reason}</span>}
-          {primaryViolation.comment && <span className="block mt-0.5">Kommentar: {primaryViolation.comment}</span>}
-          {primaryViolation.decidedAt && (
-            <span className="block mt-0.5 text-slate-400">
-              Entscheidung: {new Date(primaryViolation.decidedAt).toLocaleString("de-DE")}
-            </span>
-          )}
-        </p>
-      )}
-      <div className="mt-3 flex flex-wrap gap-2 no-print">
+      <div className="flex flex-wrap gap-2 border-t border-border px-[18px] py-3 no-print">
         {canReview && onDismiss && (
           <Button variant="secondary" size="sm" onClick={() => onDismiss(f.rawSourceFindingIds)}>
             Abweisen
@@ -154,25 +147,15 @@ function FindingSection({
   isManager?: boolean;
 }) {
   if (findings.length === 0) return null;
-  const border =
-    severity === "error"
-      ? "border-red-200"
-      : severity === "warning"
-        ? "border-amber-200"
-        : "border-slate-200";
-  const bg =
-    severity === "error"
-      ? "bg-red-50/50"
-      : severity === "warning"
-        ? "bg-amber-50/50"
-        : "bg-slate-50/50";
   return (
-    <section className={`rounded-lg border ${border} ${bg} p-5 print:break-inside-avoid`}>
-      <h3 className="text-base font-semibold text-slate-800 mb-0.5">{title}</h3>
-      <p className="text-sm text-slate-600 mb-4">{count} {count === 1 ? "Eintrag" : "Einträge"}</p>
-      <ul className="space-y-4">
+    <section className="rounded-md border border-border bg-card p-4 print:break-inside-avoid">
+      <h3 className="mb-0.5 font-sans text-[11px] font-bold uppercase tracking-[1.2px] text-ink">{title}</h3>
+      <p className="font-mono text-[9px] text-ink2 mb-4">
+        {count} {count === 1 ? "Eintrag" : "Einträge"}
+      </p>
+      <ul className="space-y-3">
         {findings.map((f, i) => (
-          <li key={f.canonicalFindingId}>
+          <li key={f.canonicalFindingId} style={{ animationDelay: `${i * 40}ms` }} className="animate-fade-up">
             <CanonicalFindingCard
               f={f}
               violationById={violationById}
@@ -217,13 +200,15 @@ function ReportWithExport({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-      <div className="px-6 py-4 border-b border-slate-200 bg-slate-50/80 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" alt="BauPilot" className="h-16 object-contain flex-shrink-0" />
-          <div>
-            <h2 className="font-semibold text-slate-800">Prüfbericht – {plan.name}</h2>
-            <p className="text-sm text-slate-500 mt-1">
+    <div className="overflow-hidden rounded-md border border-border bg-card">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border bg-white px-6 py-4">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center bg-amber font-sans text-lg font-extrabold text-white" style={{ borderRadius: 3 }}>
+            BP
+          </div>
+          <div className="min-w-0">
+            <h2 className="font-sans font-semibold text-ink">Prüfbericht – {plan.name}</h2>
+            <p className="mt-1 font-mono text-[9px] text-ink2">
             Geprüft am {run.checkedAt ? new Date(run.checkedAt).toLocaleString("de-DE") : "—"} ·{" "}
             {canonical.length} Befunde ({grouped.error.length} Kritisch, {grouped.warning.length} Warnungen, {grouped.info.length} Hinweise)
             </p>
@@ -232,29 +217,29 @@ function ReportWithExport({
         <button
           type="button"
           onClick={handleExportPdf}
-          className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors"
+          className="rounded-sm border border-border2 bg-transparent px-4 py-2 font-sans text-[11px] font-semibold tracking-wide text-ink hover:border-ink2"
         >
           Als PDF exportieren
         </button>
       </div>
       <div className="p-6">
-        <p className="text-xs text-slate-500 mb-2">
+        <p className="mb-2 font-mono text-[9px] text-ink2">
           Dies ist keine rechtliche Bewertung. Bitte prüfen Sie die Hinweise und beziehen Sie die zuständigen Vorschriften ein.
         </p>
-        <p className="text-xs text-slate-500 mb-6 no-print">
-          <Link to="/pruefumfang" className="text-slate-600 hover:text-slate-800 underline">
+        <p className="mb-6 font-mono text-[9px] text-ink2 no-print">
+          <Link to="/pruefumfang" className="text-amber hover:underline">
             Abgedeckte Prüfregeln anzeigen
           </Link>
         </p>
         {canonical.length === 0 ? (
-          <p className="text-slate-600">Keine Befunde gefunden.</p>
+          <p className="font-sans text-sm text-ink2">Keine Befunde gefunden.</p>
         ) : (
           <div className="space-y-6">
-            <div className="flex items-center gap-2 pb-2 border-b-2 border-slate-300">
-              <h3 className="text-lg font-semibold text-slate-800">Befunde (kanonisch zusammengeführt)</h3>
+            <div className="flex items-center gap-2 border-b-2 border-border pb-2">
+              <h3 className="font-sans text-lg font-semibold text-ink">Befunde (kanonisch zusammengeführt)</h3>
               <Badge variant="default">{canonical.length} Befunde</Badge>
             </div>
-            <p className="text-xs text-slate-500 -mt-2">
+            <p className="-mt-2 font-mono text-[9px] text-ink3">
               Regelbasierte Prüfung und KI-Analyse zusammengeführt. Quelle: Regelbasiert, AI-gestützt (Regel + KI), AI-only.
             </p>
             <div className="space-y-6">
@@ -315,7 +300,10 @@ export default function PlanReport() {
   });
 
   const runMutation = useMutation({
-    mutationFn: () => runsApi.create(planId!),
+    mutationFn: () =>
+      runsApi.create(planId!, {
+        categories: selectedCategories.length > 0 ? selectedCategories : undefined,
+      }),
     onSuccess: (data) => {
       queryClient.setQueryData(["run", data.id], data);
       queryClient.invalidateQueries({ queryKey: ["plan", planId] });
@@ -370,7 +358,7 @@ export default function PlanReport() {
   const breadcrumb = plan ? (
     <Link
       to={`/project/${plan.projectId}`}
-      className="inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-700 mb-4 transition-colors"
+      className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-ink2 transition-colors hover:text-ink"
     >
       <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
@@ -384,7 +372,7 @@ export default function PlanReport() {
       {planLoading || !plan ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <p className="text-sm text-slate-500">Plan wird geladen…</p>
+            <p className="text-sm text-ink2">Plan wird geladen…</p>
           </CardContent>
         </Card>
       ) : (
@@ -393,9 +381,9 @@ export default function PlanReport() {
             title={plan.name}
             description={
               <>
-                <span className="block text-slate-500">{plan.fileName} · Status: {plan.status}</span>
+                <span className="block text-ink2">{plan.fileName} · Status: {plan.status}</span>
                 {plan.extractionError && (
-                  <span className="block mt-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                  <span className="mt-2 block rounded-md border border-border2 bg-amber-soft px-3 py-2 text-sm text-amber-ink">
                     {plan.extractionError}
                   </span>
                 )}
@@ -406,10 +394,10 @@ export default function PlanReport() {
               canRun && (
                 <div className="flex flex-col items-end gap-2">
                   <details className="group">
-                    <summary className="cursor-pointer text-sm text-slate-600 hover:text-slate-800 list-none [&::-webkit-details-marker]:hidden flex items-center gap-1.5">
+                    <summary className="flex cursor-pointer list-none items-center gap-1.5 text-sm text-ink2 hover:text-ink [&::-webkit-details-marker]:hidden">
                       <span className="inline-block transition-transform group-open:rotate-90">▸</span>
                       {selectedCategories.length > 0 ? (
-                        <span className="text-slate-700">
+                        <span className="text-ink">
                           {selectedCategories.length === CATEGORY_ORDER.length
                             ? "Alle Prüfbereiche"
                             : `${selectedCategories.length} von ${CATEGORY_ORDER.length} Prüfbereiche`}
@@ -418,14 +406,14 @@ export default function PlanReport() {
                         "Prüfbereiche einschränken"
                       )}
                     </summary>
-                    <div className="mt-2 p-3 rounded-lg border border-slate-200 bg-slate-50/50 space-y-2 min-w-[200px]">
+                    <div className="mt-2 min-w-[200px] space-y-2 rounded-md border border-border bg-card p-3">
                       {CATEGORY_ORDER.map((cat) => {
                         const label = CATEGORY_LABELS[cat] ?? cat;
                         const checked = selectedCategories.includes(cat);
                         return (
                           <label
                             key={cat}
-                            className="flex items-center gap-2 text-sm cursor-pointer"
+                            className="flex cursor-pointer items-center gap-2 text-sm text-ink"
                           >
                             <input
                               type="checkbox"
@@ -437,7 +425,7 @@ export default function PlanReport() {
                                   setSelectedCategories((s) => s.filter((c) => c !== cat));
                                 }
                               }}
-                              className="rounded border-slate-300 text-slate-600 focus:ring-slate-500"
+                              className="rounded-sm border-border2 text-amber focus:ring-amber focus:ring-offset-0"
                             />
                             {label}
                           </label>
@@ -457,13 +445,13 @@ export default function PlanReport() {
           />
 
           {!canRun && plan.status !== "ready" && (
-            <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+            <div className="mb-6 rounded-md border border-border2 bg-amber-soft px-4 py-3 text-sm text-amber-ink">
               Laden Sie eine gültige JSON- oder PDF-Plan-Datei hoch, um die Regelprüfung zu starten.
             </div>
           )}
 
           {runMutation.isError && (
-            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            <div className="mb-6 rounded-md border border-border2 bg-red-soft px-4 py-3 text-sm text-red">
               {runMutation.error instanceof Error ? runMutation.error.message : String(runMutation.error)}
             </div>
           )}
@@ -503,14 +491,16 @@ export default function PlanReport() {
           )}
 
           {!hasRun && canRun && !runMutation.isPending && (
-            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center shadow-sm">
-              <p className="text-sm text-slate-500">Klicken Sie auf „Prüflauf starten“, um die Bauvorschriften-Checks auszuführen.</p>
+            <div className="rounded-md border border-border bg-card p-12 text-center">
+              <p className="text-sm text-ink2">
+                Klicken Sie auf „Prüflauf starten“, um die Bauvorschriften-Checks auszuführen.
+              </p>
             </div>
           )}
 
           {runLoading && runId && !run && (
-            <div className="rounded-xl border border-slate-200 bg-white p-12 text-center">
-              <p className="text-sm text-slate-500">Bericht wird geladen…</p>
+            <div className="rounded-md border border-border bg-card p-12 text-center">
+              <p className="text-sm text-ink2">Bericht wird geladen…</p>
             </div>
           )}
         </>

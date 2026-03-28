@@ -28,21 +28,21 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <img src="/logo.png" alt="BauPilot" className="h-20 mx-auto mb-6 object-contain" />
-          <h1 className="text-xl font-semibold text-slate-900">Anmelden</h1>
-          <p className="mt-1 text-sm text-slate-500">Bauvorschriften-Check für Architekten</p>
+    <div className="min-h-screen flex items-center justify-center bg-bg px-4 py-12">
+      <div className="w-full max-w-md animate-fade-up">
+        <div className="mb-8 text-center">
+          <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center bg-amber font-sans text-2xl font-extrabold text-white" style={{ borderRadius: 3 }}>
+            BP
+          </div>
+          <h1 className="font-sans text-xl font-semibold text-ink">Anmelden</h1>
+          <p className="mt-1 font-mono text-[9px] text-ink2">Bauvorschriften-Check für Architekten</p>
         </div>
 
         <Card>
           <CardContent className="p-8">
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
+                <div className="rounded-sm border border-border2 bg-red-soft px-4 py-3 font-mono text-sm text-red">{error}</div>
               )}
               <Input
                 label="E-Mail"
@@ -66,9 +66,9 @@ export default function Login() {
                 {loading ? "Wird angemeldet…" : "Anmelden"}
               </Button>
             </form>
-            <p className="mt-6 text-center text-sm text-slate-500">
+            <p className="mt-6 text-center font-sans text-sm text-ink2">
               Noch kein Konto?{" "}
-              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-700">
+              <Link to="/register" className="font-medium text-amber hover:underline">
                 Registrieren
               </Link>
             </p>
